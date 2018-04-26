@@ -26,10 +26,9 @@ func main() {
 	valid_modes := strings.Join(index.Modes(), ",")
 	desc_modes := fmt.Sprintf("The mode to use importing data. Valid modes are: %s.", valid_modes)
 
-	dsn := flag.String("dsn", ":memory:", "")
+	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
 	mode := flag.String("mode", "repo", desc_modes)
 
-	// all := flag.Bool("all", false, "Index all tables")
 	timings := flag.Bool("timings", false, "Display timings during and after indexing")
 
 	flag.Parse()
