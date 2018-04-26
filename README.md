@@ -15,7 +15,7 @@ All of this package's dependencies are bundled with the code in the `vendor` dir
 ## A few things before we get started
 
 1. This package assumes you are running a version of [MySQL](https://dev.mysql.com/doc/refman/5.7/en/spatial-analysis-functions.html) (or [MariaDB](https://mariadb.com/kb/en/library/geographic-geometric-features/)) with spatial extensions, so version 5.7 or higher.
-2. This package assumes _Who's On First_ documents and is not yet able to index arbitrary GeoJSON documents.
+2. This package assumes Who's On First documents and is not yet able to index arbitrary GeoJSON documents.
 3. This package shares the same basic model as the [go-whosonfirst-sqlite-*](https://github.com/whosonfirst?utf8=%E2%9C%93&q=go-whosonfirst-sqlite&type=&language=) packages. They should be reconciled. Today, they are not.
 4. This is not an abstract package for working with databases and tables that aren't Who's On First specific, the way [go-whosonfirst-sqlite](https://github.com/whosonfirst/go-whosonfirst-sqlite) is. It probably _should_ be but that seems like something that will happen as a result of doing #3 (above). 
 
