@@ -12,3 +12,16 @@ make bin
 
 All of this package's dependencies are bundled with the code in the `vendor` directory.
 
+## Tools
+
+### wof-mysql-index 
+
+_Please write me_
+
+```
+./bin/wof-mysql-index -dsn '{USER}:{PASSWORD}@/{DATABASE}' /usr/local/data/whosonfirst-data/
+```
+
+## To do
+
+This package shares the same basic model as the [go-whosonfirst-sqlite-*](https://github.com/whosonfirst?utf8=%E2%9C%93&q=go-whosonfirst-sqlite&type=&language=) packages. They should be reconciled. Today, they are not.

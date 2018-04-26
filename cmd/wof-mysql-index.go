@@ -10,10 +10,9 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
-	_ "github.com/whosonfirst/go-whosonfirst-mysql/tables"
+	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
 	"io"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -26,15 +25,12 @@ func main() {
 	desc_modes := fmt.Sprintf("The mode to use importing data. Valid modes are: %s.", valid_modes)
 
 	dsn := flag.String("dsn", ":memory:", "")
-	mode := flag.String("mode", "files", desc_modes)
+	mode := flag.String("mode", "repo", desc_modes)
 
-	all := flag.Bool("all", false, "Index all tables")
+	// all := flag.Bool("all", false, "Index all tables")
 	timings := flag.Bool("timings", false, "Display timings during and after indexing")
-	var procs = flag.Int("processes", (runtime.NumCPU() * 2), "The number of concurrent processes to index data with")
 
 	flag.Parse()
-
-	runtime.GOMAXPROCS(*procs)
 
 	logger := log.SimpleWOFLogger()
 
@@ -51,9 +47,13 @@ func main() {
 
 	to_index := make([]mysql.Table, 0)
 
-	if *all {
-	   // pass
+	wof, err := tables.NewWhosonfirstTableWithDatabase(db)
+
+	if err != nil {
+		logger.Fatal("failed to create 'whosonfirst' table because %s", err)
 	}
+
+	to_index = append(to_index, wof)
 
 	if len(to_index) == 0 {
 		logger.Fatal("You forgot to specify which (any) tables to index")
