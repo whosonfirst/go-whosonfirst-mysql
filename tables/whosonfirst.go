@@ -67,10 +67,10 @@ func (t *WhosonfirstTable) Schema() string {
 		      name varchar(100) DEFAULT NULL,
 		      country char(2) NOT NULL,
 		      placetype VARCHAR(24) NOT NULL,
-		      parent_id BIGINT UNSIGNED NOT NULL,
-		      is_current TINYINT NOT NULL,
-		      is_deprecated TINYINT NOT NULL,
-		      is_ceased TINYINT NOT NULL,
+		      parent_id BIGINT NOT NULL COMMENT 'this can not be unsigned because you know -1, -2 and so on...',
+		      is_current TINYINT NOT NULL COMMENT 'also not unsigned because -1',
+		      is_deprecated TINYINT NOT NULL COMMENT 'also not unsigned because -1',
+		      is_ceased TINYINT NOT NULL COMMENT 'also not unsigned because -1',
 		      geometry GEOMETRY NOT NULL,
 		      centroid POINT NOT NULL,
 		      lastmodified INT NOT NULL,
@@ -120,7 +120,7 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) er
 
 	str_wkt, err := wkt.Marshal(g)
 
-	sql := fmt.Sprintf(`INSERT INTO %s (
+	sql := fmt.Sprintf(`REPLACE INTO %s (
 		id, name, country, placetype, parent_id,
 		is_current, is_deprecated, is_ceased,
 		geometry, centroid,
