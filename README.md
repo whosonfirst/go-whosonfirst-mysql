@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS %s (
 There are a few important things to note about the `whosonfirst` table:
 
 1. It's almost certainly going to be moved in to a different package (once this code base is reconciled with the `go-whosonfirst-sqlite` packages)
-2. It does _not_ store all the necessary fields to return a [standard places response](https://github.com/whosonfirst/go-whosonfirst-spr) (spr) yet
+2. It does _not_ store all the necessary fields to return a [standard places response](https://github.com/whosonfirst/go-whosonfirst-spr) (SPR) yet
 3. It is now a _third_ way to "spatially" store WOF records, along with the [go-whosonfirst-sqlite-features `geometries`](https://github.com/whosonfirst/go-whosonfirst-sqlite-features#geometries) and the [go-whosonfirst-spatialite-geojson geojson](https://github.com/whosonfirst/go-whosonfirst-spatialite-geojson#geojson) tables. It is entirely possible that this is "just how it is" and there is no value in a single unified table schema but, equally, it seems like it's something to have a think about.
 
 ## Custom tables
