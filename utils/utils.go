@@ -1,51 +1,84 @@
 package utils
 
 import (
+	_ "database/sql"
+	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
-	"os"
 )
+
+var lookup_table map[string]bool
+
+func init() {
+	lookup_table = make(map[string]bool)
+}
 
 func HasTable(db mysql.Database, table string) (bool, error) {
 
-	has_table := false
+	dsn := db.DSN()
 
-	_, err := os.Stat(db.DSN())
+	lookup_key := fmt.Sprintf("%s#%s", dsn, table)
 
-	if os.IsNotExist(err) {
-		has_table = false
-	} else {
+	has_table, ok := lookup_table[lookup_key]
 
-		conn, err := db.Conn()
+	if ok {
+		return has_table, nil
+	}
+
+	conn, err := db.Conn()
+
+	if err != nil {
+		return false, err
+	}
+
+	// Would that the following work in Go... because it totally works
+	// from the MySQL CLI... I have no idea (20180426/thisisaaronland)
+	// 2018/04/26 09:37:45 ERR SHOW TABLES LIKE ?
+	// Error 1064: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '?' at line 1
+
+	/*
+		query := "SHOW TABLES LIKE ?"
+		row := conn.QueryRow(query, table)
+		err = row.Scan()
+
+		log.Println("ERR", query, err)
+
+		switch {
+		case err == sql.ErrNoRows:
+			return false, nil
+		case err != nil:
+			return false, err
+		default:
+			return true, nil
+		}
+	*/
+
+	has_table = false
+
+	query := "SHOW TABLES"
+	rows, err := conn.Query(query)
+
+	if err != nil {
+		return false, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var name string
+		err := rows.Scan(&name)
 
 		if err != nil {
 			return false, err
 		}
 
-		sql := "SELECT name FROM mysql_master WHERE type='table'"
-
-		rows, err := conn.Query(sql)
-
-		if err != nil {
-			return false, err
-		}
-
-		defer rows.Close()
-
-		for rows.Next() {
-
-			var name string
-			err := rows.Scan(&name)
-
-			if err != nil {
-				return false, err
-			}
-
-			if name == table {
-				has_table = true
-				break
-			}
+		if name == table {
+			has_table = true
+			break
 		}
 	}
+
+	lookup_table[lookup_key] = has_table
 
 	return has_table, nil
 }
