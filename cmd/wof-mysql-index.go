@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
@@ -11,6 +12,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
+	"github.com/whosonfirst/warning"
 	"io"
 	"os"
 	"strings"
@@ -83,8 +85,12 @@ func main() {
 		f, err := feature.LoadWOFFeatureFromReader(fh)
 
 		if err != nil {
-			logger.Warning("failed to load feature (%s) because %s", path, err)
-			return err
+
+			if err != nil && !warning.IsWarning(err){
+				msg := fmt.Sprintf("Unable to load %s, because %s", path, err)
+				return errors.New(msg)
+			}
+			
 		}
 
 		db.Lock()

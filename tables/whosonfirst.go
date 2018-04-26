@@ -64,8 +64,8 @@ func (t *WhosonfirstTable) Schema() string {
 
 	sql := `CREATE TABLE IF NOT EXISTS %s (
 		      id BIGINT UNSIGNED PRIMARY KEY,
-		      name varchar(100) DEFAULT NULL,
-		      country char(2) NOT NULL,
+		      name VARCHAR(255) DEFAULT NULL,
+		      country CHAR(2) NOT NULL,
 		      placetype VARCHAR(24) NOT NULL,
 		      parent_id BIGINT NOT NULL COMMENT 'this can not be unsigned because you know -1, -2 and so on...',
 		      is_current TINYINT NOT NULL COMMENT 'also not unsigned because -1',
@@ -131,6 +131,25 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) er
 		ST_GeomFromText('%s'), ST_Centroid(ST_GeomFromText('%s')),
 		? 
 	)`, t.Name(), str_wkt, str_wkt)
+
+	// because apparently ST_Centroid() on a centroid results in... a null value? (20180426/thisisaaronland)
+	// WARNING failed to index feature (/usr/local/data/sfomuseum-data-venue/data/370/201/263/370201263.geojson) in 'whosonfirst' table because Error 1048: Column 'centroid' cannot be null
+
+	if geometry.Type(f) == "Point" {
+		
+		sql = fmt.Sprintf(`REPLACE INTO %s (
+			id, name, country, placetype, parent_id,
+			is_current, is_deprecated, is_ceased,
+			geometry, centroid,
+			lastmodified
+		) VALUES (
+			?, ?, ?, ?, ?,
+			?, ?, ?,
+			ST_GeomFromText('%s'), ST_GeomFromText('%s'),
+			? 
+		)`, t.Name(), str_wkt, str_wkt)
+
+	}
 
 	stmt, err := tx.Prepare(sql)
 
