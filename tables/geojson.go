@@ -1,5 +1,8 @@
 package tables
 
+// https://www.percona.com/blog/2016/03/07/json-document-fast-lookup-with-mysql-5-7/
+// https://archive.fosdem.org/2016/schedule/event/mysql57_json/attachments/slides/1291/export/events/attachments/mysql57_json/slides/1291/MySQL_57_JSON.pdf
+
 import (
 	"encoding/json"
 	"fmt"
@@ -57,10 +60,20 @@ func (t *GeoJSONTable) Schema() string {
 		      properties JSON NOT NULL,
 		      geometry GEOMETRY NOT NULL,
 		      lastmodified INT NOT NULL,
-		      SPATIAL KEY %s_geometry (geometry)
+		      parent_id BIGINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:parent_id"'))) VIRTUAL COMMENT 'this can not be unsigned because you know -1, -2 and so on...',
+		      placetype VARCHAR(64) NOT NULL GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
+		      is_current TINYINY GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL  COMMENT 'also not unsigned because -1,
+		      is_deprecated TINYINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
+		      is_ceased TINYINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
+		      is_superseded TINYINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
+		      is_superseding TINYINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
+		      KEY parent_id (parent_id),
+		      KEY placetype (placetype),
+		      KEY is_current (is_current),
+		      SPATIAL KEY idx_geometry (geometry)
 	      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 
-	return fmt.Sprintf(sql, t.Name(), t.Name())
+	return fmt.Sprintf(sql, t.Name())
 }
 
 func (t *GeoJSONTable) InitializeTable(db mysql.Database) error {
