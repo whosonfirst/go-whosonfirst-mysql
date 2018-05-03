@@ -29,6 +29,10 @@ func main() {
 	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
 	mode := flag.String("mode", "repo", desc_modes)
 
+	index_geojson := flag.Bool("geojson", false, "Index the 'geojson' table")
+	index_whosonfirst := flag.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
+	index_all := flag.Bool("all", false, "Index all the tables")
+
 	timings := flag.Bool("timings", false, "Display timings during and after indexing")
 
 	flag.Parse()
@@ -48,13 +52,25 @@ func main() {
 
 	to_index := make([]mysql.Table, 0)
 
-	wof, err := tables.NewWhosonfirstTableWithDatabase(db)
+	if *index_whosonfirst || *index_all {
+		tbl, err := tables.NewWhosonfirstTableWithDatabase(db)
 
-	if err != nil {
-		logger.Fatal("failed to create 'whosonfirst' table because %s", err)
+		if err != nil {
+			logger.Fatal("failed to create 'whosonfirst' table because %s", err)
+		}
+
+		to_index = append(to_index, tbl)
 	}
 
-	to_index = append(to_index, wof)
+	if *index_geojson || *index_all {
+		tbl, err := tables.NewGeoJSONTableWithDatabase(db)
+
+		if err != nil {
+			logger.Fatal("failed to create 'geojson' table because %s", err)
+		}
+
+		to_index = append(to_index, tbl)
+	}
 
 	if len(to_index) == 0 {
 		logger.Fatal("You forgot to specify which (any) tables to index")
@@ -85,11 +101,11 @@ func main() {
 
 		if err != nil {
 
-			if err != nil && !warning.IsWarning(err){
+			if err != nil && !warning.IsWarning(err) {
 				msg := fmt.Sprintf("Unable to load %s, because %s", path, err)
 				return errors.New(msg)
 			}
-			
+
 		}
 
 		db.Lock()

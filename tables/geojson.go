@@ -1,7 +1,7 @@
 package tables
 
 import (
-       "encoding/json"
+	"encoding/json"
 	"fmt"
 	"github.com/tidwall/gjson"
 	"github.com/twpayne/go-geom"
@@ -57,10 +57,10 @@ func (t *GeoJSONTable) Schema() string {
 		      properties JSON NOT NULL,
 		      geometry GEOMETRY NOT NULL,
 		      lastmodified INT NOT NULL,
-		      SPATIAL KEY %s_geometry (geometry),
+		      SPATIAL KEY %s_geometry (geometry)
 	      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 
-	return fmt.Sprintf(sql, t.Name(), t.Name(), t.Name())
+	return fmt.Sprintf(sql, t.Name(), t.Name())
 }
 
 func (t *GeoJSONTable) InitializeTable(db mysql.Database) error {
@@ -102,7 +102,7 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature) error 
 	str_wkt, err := wkt.Marshal(g)
 
 	sql := fmt.Sprintf(`REPLACE INTO %s (
-		id, properies, geometry, lastmodified
+		id, properties, geometry, lastmodified
 	) VALUES (
 		?, ?, ST_GeomFromText('%s'), ?
 	)`, t.Name(), str_wkt)
@@ -121,7 +121,7 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature) error 
 	if err != nil {
 		return err
 	}
-	
+
 	lastmod := whosonfirst.LastModified(f)
 
 	_, err = stmt.Exec(f.Id(), string(props_json), lastmod)

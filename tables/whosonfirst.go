@@ -136,7 +136,7 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) er
 	// WARNING failed to index feature (/usr/local/data/sfomuseum-data-venue/data/370/201/263/370201263.geojson) in 'whosonfirst' table because Error 1048: Column 'centroid' cannot be null
 
 	if geometry.Type(f) == "Point" {
-		
+
 		sql = fmt.Sprintf(`REPLACE INTO %s (
 			id, name, country, placetype, parent_id,
 			is_current, is_deprecated, is_ceased,
