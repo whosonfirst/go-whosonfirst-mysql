@@ -61,27 +61,30 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) er
 ```
 CREATE TABLE IF NOT EXISTS %s (
       id BIGINT UNSIGNED PRIMARY KEY,
-      name VARCHAR(255) DEFAULT NULL,
-      country CHAR(2) NOT NULL,
-      placetype VARCHAR(24) NOT NULL,
-      parent_id BIGINT NOT NULL COMMENT 'this can not be unsigned because you know -1, -2 and so on...',
-      is_current TINYINT NOT NULL COMMENT 'also not unsigned because -1',
-      is_deprecated TINYINT NOT NULL COMMENT 'also not unsigned because -1',
-      is_ceased TINYINT NOT NULL COMMENT 'also not unsigned because -1',
+      properties JSON NOT NULL,
       geometry GEOMETRY NOT NULL,
-      centroid POINT NOT NULL,
       lastmodified INT NOT NULL,
-      SPATIAL KEY %s_geometry (geometry),
-      SPATIAL KEY %s_centroid (centroid),
-      FULLTEXT (name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+      parent_id BIGINT       GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:parent_id"'))) VIRTUAL,
+      placetype VARCHAR(64)  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
+      is_current TINYINT     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL,
+      is_ceased TINYINT      GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:cessation"')) != "" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
+      is_deprecated TINYINT  GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
+      is_superseded TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:superseded_by"')) > 0) VIRTUAL,
+      is_superseding TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:supersedes"')) > 0) VIRTUAL,
+      KEY parent_id (parent_id),
+      KEY placetype (placetype),
+      KEY is_current (is_current),
+      KEY is_deprecated (is_deprecated),
+      KEY is_superseded (is_superseded),
+      KEY is_superseding (is_superseding),
+      SPATIAL KEY idx_geometry (geometry)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ```
 
 There are a few important things to note about the `whosonfirst` table:
 
 1. It's almost certainly going to be moved in to a different package (once this code base is reconciled with the `go-whosonfirst-sqlite` packages)
-2. It does _not_ store all the necessary fields to return a [standard places response](https://github.com/whosonfirst/go-whosonfirst-spr) (SPR) yet
-3. It is now a _third_ way to "spatially" store WOF records, along with the [go-whosonfirst-sqlite-features `geometries`](https://github.com/whosonfirst/go-whosonfirst-sqlite-features#geometries) and the [go-whosonfirst-spatialite-geojson geojson](https://github.com/whosonfirst/go-whosonfirst-spatialite-geojson#geojson) tables. It is entirely possible that this is "just how it is" and there is no value in a single unified table schema but, equally, it seems like it's something to have a think about.
+2. It is now a _third_ way to "spatially" store WOF records, along with the [go-whosonfirst-sqlite-features `geometries`](https://github.com/whosonfirst/go-whosonfirst-sqlite-features#geometries) and the [go-whosonfirst-spatialite-geojson geojson](https://github.com/whosonfirst/go-whosonfirst-spatialite-geojson#geojson) tables. It is entirely possible that this is "just how it is" and there is no value in a single unified table schema but, equally, it seems like it's something to have a think about.
 
 ## Custom tables
 
@@ -111,6 +114,10 @@ For example:
 ## See also:
 
 * https://dev.mysql.com/doc/refman/5.7/en/spatial-analysis-functions.html
-* https://mariadb.com/kb/en/library/geographic-geometric-features/
 * https://github.com/whosonfirst/go-whosonfirst-sqlite
+
+* https://dev.mysql.com/doc/refman/8.0/en/json-functions.html
+* https://www.percona.com/blog/2016/03/07/json-document-fast-lookup-with-mysql-5-7/
+* https://archive.fosdem.org/2016/schedule/event/mysql57_json/attachments/slides/1291/export/events/attachments/mysql57_json/slides/1291/MySQL_57_JSON.pdf
+
 

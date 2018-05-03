@@ -1,9 +1,9 @@
 package tables
 
-// https://mariadb.com/kb/en/library/geographic-geometric-features/
-
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/tidwall/gjson"
 	"github.com/twpayne/go-geom"
 	gogeom_geojson "github.com/twpayne/go-geom/encoding/geojson"
 	"github.com/twpayne/go-geom/encoding/wkt"
@@ -12,19 +12,12 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/utils"
-	// "log"
-	"strconv"
+	_ "log"
 )
 
 type WhosonfirstTable struct {
 	mysql.Table
 	name string
-}
-
-type WhosonfirstRow struct {
-	Id           int64
-	Body         string
-	LastModified int64
 }
 
 func NewWhosonfirstTableWithDatabase(db mysql.Database) (mysql.Table, error) {
@@ -57,29 +50,34 @@ func (t *WhosonfirstTable) Name() string {
 	return t.name
 }
 
-func (t *WhosonfirstTable) Schema() string {
+// https://dev.mysql.com/doc/refman/8.0/en/json-functions.html
+// https://www.percona.com/blog/2016/03/07/json-document-fast-lookup-with-mysql-5-7/
+// https://archive.fosdem.org/2016/schedule/event/mysql57_json/attachments/slides/1291/export/events/attachments/mysql57_json/slides/1291/MySQL_57_JSON.pdf
 
-	// `properties` JSON NOT NULL,
-	// `hierarchies` JSON NOT NULL,
+func (t *WhosonfirstTable) Schema() string {
 
 	sql := `CREATE TABLE IF NOT EXISTS %s (
 		      id BIGINT UNSIGNED PRIMARY KEY,
-		      name VARCHAR(255) DEFAULT NULL,
-		      country CHAR(2) NOT NULL,
-		      placetype VARCHAR(24) NOT NULL,
-		      parent_id BIGINT NOT NULL COMMENT 'this can not be unsigned because you know -1, -2 and so on...',
-		      is_current TINYINT NOT NULL COMMENT 'also not unsigned because -1',
-		      is_deprecated TINYINT NOT NULL COMMENT 'also not unsigned because -1',
-		      is_ceased TINYINT NOT NULL COMMENT 'also not unsigned because -1',
+		      properties JSON NOT NULL,
 		      geometry GEOMETRY NOT NULL,
-		      centroid POINT NOT NULL,
 		      lastmodified INT NOT NULL,
-		      SPATIAL KEY %s_geometry (geometry),
-		      SPATIAL KEY %s_centroid (centroid),
-		      FULLTEXT (name)
-		      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+		      parent_id BIGINT       GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:parent_id"'))) VIRTUAL,
+		      placetype VARCHAR(64)  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
+		      is_current TINYINT     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL,
+		      is_ceased TINYINT      GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:cessation"')) != "" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
+		      is_deprecated TINYINT  GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
+		      is_superseded TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:superseded_by"')) > 0) VIRTUAL,
+		      is_superseding TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:supersedes"')) > 0) VIRTUAL,
+		      KEY parent_id (parent_id),
+		      KEY placetype (placetype),
+		      KEY is_current (is_current),
+		      KEY is_deprecated (is_deprecated),
+		      KEY is_superseded (is_superseded),
+		      KEY is_superseding (is_superseding),
+		      SPATIAL KEY idx_geometry (geometry)
+	      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 
-	return fmt.Sprintf(sql, t.Name(), t.Name(), t.Name())
+	return fmt.Sprintf(sql, t.Name())
 }
 
 func (t *WhosonfirstTable) InitializeTable(db mysql.Database) error {
@@ -121,35 +119,10 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) er
 	str_wkt, err := wkt.Marshal(g)
 
 	sql := fmt.Sprintf(`REPLACE INTO %s (
-		id, name, country, placetype, parent_id,
-		is_current, is_deprecated, is_ceased,
-		geometry, centroid,
-		lastmodified
+		geometry, id, properties, lastmodified
 	) VALUES (
-		?, ?, ?, ?, ?,
-		?, ?, ?,
-		ST_GeomFromText('%s'), ST_Centroid(ST_GeomFromText('%s')),
-		? 
-	)`, t.Name(), str_wkt, str_wkt)
-
-	// because apparently ST_Centroid() on a centroid results in... a null value? (20180426/thisisaaronland)
-	// WARNING failed to index feature (/usr/local/data/sfomuseum-data-venue/data/370/201/263/370201263.geojson) in 'whosonfirst' table because Error 1048: Column 'centroid' cannot be null
-
-	if geometry.Type(f) == "Point" {
-
-		sql = fmt.Sprintf(`REPLACE INTO %s (
-			id, name, country, placetype, parent_id,
-			is_current, is_deprecated, is_ceased,
-			geometry, centroid,
-			lastmodified
-		) VALUES (
-			?, ?, ?, ?, ?,
-			?, ?, ?,
-			ST_GeomFromText('%s'), ST_GeomFromText('%s'),
-			? 
-		)`, t.Name(), str_wkt, str_wkt)
-
-	}
+		ST_GeomFromText('%s'), ?, ?, ?
+	)`, t.Name(), str_wkt)
 
 	stmt, err := tx.Prepare(sql)
 
@@ -159,32 +132,19 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) er
 
 	defer stmt.Close()
 
-	is_current, err := whosonfirst.IsCurrent(f)
+	props := gjson.GetBytes(f.Bytes(), "properties")
+	props_json, err := json.Marshal(props.Value())
 
 	if err != nil {
 		return err
 	}
 
-	is_deprecated, err := whosonfirst.IsDeprecated(f)
-
-	if err != nil {
-		return err
-	}
-
-	is_ceased, err := whosonfirst.IsCeased(f)
-
-	if err != nil {
-		return err
-	}
-
-	country := whosonfirst.Country(f)
 	lastmod := whosonfirst.LastModified(f)
 
-	parent_id := strconv.FormatInt(whosonfirst.ParentId(f), 10)
-
-	_, err = stmt.Exec(f.Id(), f.Name(), country, f.Placetype(), parent_id, is_current.StringFlag(), is_deprecated.StringFlag(), is_ceased.StringFlag(), lastmod)
+	_, err = stmt.Exec(f.Id(), string(props_json), lastmod)
 
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
