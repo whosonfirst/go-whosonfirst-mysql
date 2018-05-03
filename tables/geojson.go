@@ -1,8 +1,5 @@
 package tables
 
-// https://www.percona.com/blog/2016/03/07/json-document-fast-lookup-with-mysql-5-7/
-// https://archive.fosdem.org/2016/schedule/event/mysql57_json/attachments/slides/1291/export/events/attachments/mysql57_json/slides/1291/MySQL_57_JSON.pdf
-
 import (
 	"encoding/json"
 	"fmt"
@@ -15,7 +12,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/utils"
-	// "log"
+	_ "log"
 )
 
 type GeoJSONTable struct {
@@ -53,6 +50,10 @@ func (t *GeoJSONTable) Name() string {
 	return t.name
 }
 
+// https://dev.mysql.com/doc/refman/8.0/en/json-functions.html
+// https://www.percona.com/blog/2016/03/07/json-document-fast-lookup-with-mysql-5-7/
+// https://archive.fosdem.org/2016/schedule/event/mysql57_json/attachments/slides/1291/export/events/attachments/mysql57_json/slides/1291/MySQL_57_JSON.pdf
+
 func (t *GeoJSONTable) Schema() string {
 
 	sql := `CREATE TABLE IF NOT EXISTS %s (
@@ -60,16 +61,19 @@ func (t *GeoJSONTable) Schema() string {
 		      properties JSON NOT NULL,
 		      geometry GEOMETRY NOT NULL,
 		      lastmodified INT NOT NULL,
-		      parent_id BIGINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:parent_id"'))) VIRTUAL COMMENT 'this can not be unsigned because you know -1, -2 and so on...',
-		      placetype VARCHAR(64) NOT NULL GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
-		      is_current TINYINY GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL  COMMENT 'also not unsigned because -1,
-		      is_deprecated TINYINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
-		      is_ceased TINYINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
-		      is_superseded TINYINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
-		      is_superseding TINYINT GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
+		      parent_id BIGINT       GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:parent_id"'))) VIRTUAL,
+		      placetype VARCHAR(64)  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
+		      is_current TINYINT     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL,
+		      is_ceased TINYINT      GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:cessation"')) != "" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
+		      is_deprecated TINYINT  GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
+		      is_superseded TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:superseded_by"')) > 0) VIRTUAL,
+		      is_superseding TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:supersedes"')) > 0) VIRTUAL,
 		      KEY parent_id (parent_id),
 		      KEY placetype (placetype),
 		      KEY is_current (is_current),
+		      KEY is_deprecated (is_deprecated),
+		      KEY is_superseded (is_superseded),
+		      KEY is_superseding (is_superseding),
 		      SPATIAL KEY idx_geometry (geometry)
 	      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 
