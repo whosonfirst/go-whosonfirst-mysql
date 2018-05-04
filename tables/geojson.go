@@ -1,7 +1,6 @@
 package tables
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
@@ -80,12 +79,6 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature) error 
 		return err
 	}
 
-	body, err := json.Marshal(f.Bytes())
-
-	if err != nil {
-		return err
-	}
-
 	sql := fmt.Sprintf(`REPLACE INTO %s (
 		id, body, lastmodified
 	) VALUES (
@@ -104,6 +97,7 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature) error 
 		return err
 	}
 
+	body := f.Bytes()
 	lastmod := whosonfirst.LastModified(f)
 
 	_, err = stmt.Exec(f.Id(), string(body), lastmod)
