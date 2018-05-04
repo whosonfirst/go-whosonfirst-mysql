@@ -60,22 +60,40 @@ func (t *WhosonfirstTable) Schema() string {
 		      id BIGINT UNSIGNED PRIMARY KEY,
 		      properties JSON NOT NULL,
 		      geometry GEOMETRY NOT NULL,
+		      centroid POINT NOT NULL COMMENT 'This is not necessary a math centroid',
 		      lastmodified INT NOT NULL,
 		      parent_id BIGINT       GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:parent_id"'))) VIRTUAL,
 		      placetype VARCHAR(64)  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
 		      is_current TINYINT     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL,
-		      is_ceased TINYINT      GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:cessation"')) != "" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
-		      is_deprecated TINYINT  GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
+		      is_nullisland TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_nullisland"'))) VIRTUAL,
+		      is_approximate TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_approximate"'))) VIRTUAL,
+		      is_ceased TINYINT      GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:cessation"')) != "" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
+		      is_deprecated TINYINT  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
 		      is_superseded TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:superseded_by"')) > 0) VIRTUAL,
 		      is_superseding TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:supersedes"')) > 0) VIRTUAL,
+		      date_upper DATE	     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties, '$."date:cessation_upper"'))) VIRTUAL,
+		      date_lower DATE	     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties, '$."date:inception_lower"'))) VIRTUAL,
 		      KEY parent_id (parent_id),
 		      KEY placetype (placetype),
 		      KEY is_current (is_current),
+		      KEY is_nullisland (is_nullisland),
+		      KEY is_approximate (is_approximate),
 		      KEY is_deprecated (is_deprecated),
 		      KEY is_superseded (is_superseded),
 		      KEY is_superseding (is_superseding),
-		      SPATIAL KEY idx_geometry (geometry)
+		      KEY date_upper (date_upper),
+		      KEY date_lower (date_lower),
+		      SPATIAL KEY idx_geometry (geometry),
+		      SPATIAL KEY idx_centroid (centroid)
 	      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+
+	// so while this is technically possible we're not doing it because it will return the math centroid
+	// and well we all know what that means for places like SF - if you don't it means the math centroid
+	// will be in the pacific ocean because technically the farralon islands are part of SF - so instead
+	// we we compute the centroid below (using the go-whosonfirst-geojson-v2 Centroid interface)
+	//
+	// ALTER TABLE whosonfirst ADD centroid POINT GENERATED ALWAYS AS (ST_Centroid(geometry)) VIRTUAL;
+	// (20180504/thisisaaronland)
 
 	return fmt.Sprintf(sql, t.Name())
 }
@@ -116,13 +134,23 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) er
 		return err
 	}
 
-	str_wkt, err := wkt.Marshal(g)
+	wkt_geom, err := wkt.Marshal(g)
+
+	centroid, err := whosonfirst.Centroid(f)
+
+	if err != nil {
+		return err
+	}
+
+	coord := centroid.Coord()
+
+	wkt_centroid := fmt.Sprintf("POINT(%0.6f %0.6f)", coord.X, coord.Y)
 
 	sql := fmt.Sprintf(`REPLACE INTO %s (
-		geometry, id, properties, lastmodified
+		geometry, centroid, id, properties, lastmodified
 	) VALUES (
-		ST_GeomFromText('%s'), ?, ?, ?
-	)`, t.Name(), str_wkt)
+		ST_GeomFromText('%s'), ST_GeomFromText('%s'), ?, ?, ?
+	)`, t.Name(), wkt_geom, wkt_centroid)
 
 	stmt, err := tx.Prepare(sql)
 

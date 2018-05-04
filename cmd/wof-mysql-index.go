@@ -29,6 +29,7 @@ func main() {
 	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
 	mode := flag.String("mode", "repo", desc_modes)
 
+	index_geojson := flag.Bool("geojson", false, "Index the 'geojson' tables")
 	index_whosonfirst := flag.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
 	index_all := flag.Bool("all", false, "Index all the tables")
 
@@ -50,6 +51,17 @@ func main() {
 	defer db.Close()
 
 	to_index := make([]mysql.Table, 0)
+
+	if *index_geojson || *index_all {
+
+		tbl, err := tables.NewGeoJSONTableWithDatabase(db)
+
+		if err != nil {
+			logger.Fatal("failed to create 'geojson' table because %s", err)
+		}
+
+		to_index = append(to_index, tbl)
+	}
 
 	if *index_whosonfirst || *index_all {
 
@@ -174,7 +186,7 @@ func main() {
 		}()
 
 		defer func() {
-		      done_ch <- true
+			done_ch <- true
 		}()
 	}
 

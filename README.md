@@ -56,35 +56,57 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) er
 
 ## Tables
 
+### geojson
+
+```
+CREATE TABLE IF NOT EXISTS geojson (
+      id BIGINT UNSIGNED PRIMARY KEY,
+      body LONGBLOB NOT NULL,
+      lastmodified INT NOT NULL,
+      KEY lastmodified (lastmodified)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+```
+
 ### whosonfirst
 
 ```
-CREATE TABLE IF NOT EXISTS %s (
+CREATE TABLE IF NOT EXISTS whosonfirst (
       id BIGINT UNSIGNED PRIMARY KEY,
       properties JSON NOT NULL,
       geometry GEOMETRY NOT NULL,
+      centroid POINT NOT NULL COMMENT 'This is not necessary a math centroid',
       lastmodified INT NOT NULL,
       parent_id BIGINT       GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:parent_id"'))) VIRTUAL,
       placetype VARCHAR(64)  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
       is_current TINYINT     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL,
-      is_ceased TINYINT      GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:cessation"')) != "" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
-      is_deprecated TINYINT  GENERATED ALWAYS AS (json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
+      is_nullisland TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_nullisland"'))) VIRTUAL,
+      is_approximate TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_approximate"'))) VIRTUAL,
+      is_ceased TINYINT      GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:cessation"')) != "" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
+      is_deprecated TINYINT  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
       is_superseded TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:superseded_by"')) > 0) VIRTUAL,
       is_superseding TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:supersedes"')) > 0) VIRTUAL,
+      date_upper DATE	     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties, '$."date:cessation_upper"'))) VIRTUAL,
+      date_lower DATE	     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties, '$."date:inception_lower"'))) VIRTUAL,
       KEY parent_id (parent_id),
       KEY placetype (placetype),
       KEY is_current (is_current),
+      KEY is_nullisland (is_nullisland),
+      KEY is_approximate (is_approximate),
       KEY is_deprecated (is_deprecated),
       KEY is_superseded (is_superseded),
       KEY is_superseding (is_superseding),
-      SPATIAL KEY idx_geometry (geometry)
+      KEY date_upper (date_upper),
+      KEY date_lower (date_lower),
+      SPATIAL KEY idx_geometry (geometry),
+      SPATIAL KEY idx_centroid (centroid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ```
 
 There are a few important things to note about the `whosonfirst` table:
 
-1. It's almost certainly going to be moved in to a different package (once this code base is reconciled with the `go-whosonfirst-sqlite` packages)
-2. It is now a _third_ way to "spatially" store WOF records, along with the [go-whosonfirst-sqlite-features `geometries`](https://github.com/whosonfirst/go-whosonfirst-sqlite-features#geometries) and the [go-whosonfirst-spatialite-geojson geojson](https://github.com/whosonfirst/go-whosonfirst-spatialite-geojson#geojson) tables. It is entirely possible that this is "just how it is" and there is no value in a single unified table schema but, equally, it seems like it's something to have a think about.
+1. It is technically possible to add VIRTUAL centroid along the lines of `centroid POINT GENERATED ALWAYS AS (ST_Centroid(geometry)) VIRTUAL` we don't because MySQL will return the math centroid and well we all know what that means for places like San Francisco (SF) - if you don't it means the [math centroid will be in the Pacific Ocean](https://spelunker.whosonfirst.org/id/85922583/) because technically the Farralon Islands are part of SF - so instead we we compute the centroid in the code (using the go-whosonfirst-geojson-v2 Centroid interface)
+2. It's almost certainly going to be moved in to a different package (once this code base is reconciled with the `go-whosonfirst-sqlite` packages)
+3. It is now a _third_ way to "spatially" store WOF records, along with the [go-whosonfirst-sqlite-features `geometries`](https://github.com/whosonfirst/go-whosonfirst-sqlite-features#geometries) and the [go-whosonfirst-spatialite-geojson geojson](https://github.com/whosonfirst/go-whosonfirst-spatialite-geojson#geojson) tables. It is entirely possible that this is "just how it is" and there is no value in a single unified table schema but, equally, it seems like it's something to have a think about.
 
 ## Custom tables
 
