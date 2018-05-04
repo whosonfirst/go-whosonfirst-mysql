@@ -173,6 +173,9 @@ func main() {
 			}
 		}()
 
+		defer func() {
+		      done_ch <- true
+		}()
 	}
 
 	err = indexer.IndexPaths(flag.Args())
@@ -180,9 +183,6 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to index paths in %s mode because: %s", *mode, err)
 	}
-
-	done_ch <- true
-	show_timings()
 
 	os.Exit(0)
 }
