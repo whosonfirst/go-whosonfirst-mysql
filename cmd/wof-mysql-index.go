@@ -27,7 +27,8 @@ func main() {
 	valid_modes := strings.Join(index.Modes(), ",")
 	desc_modes := fmt.Sprintf("The mode to use importing data. Valid modes are: %s.", valid_modes)
 
-	config := flag.String("config", "", "...")
+	config := flag.String("config", "", "Read some or all flags from an ini-style config file. Values in the config file take precedence over command line flags.")
+	section := flag.String("section", "wof-mysql", "A valid ini-style config file section.")
 
 	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
 	mode := flag.String("mode", "repo", desc_modes)
@@ -55,7 +56,7 @@ func main() {
 			logger.Fatal("Unable to load config file because %s", err)
 		}
 
-		sect, err := cfg.GetSection("mysql")
+		sect, err := cfg.GetSection(*section)
 
 		if err != nil {
 			logger.Fatal("Config file is missing 'mysql' section, %s", err)
@@ -65,16 +66,21 @@ func main() {
 
 			name := fl.Name
 
+			if name == "section" {
+				return
+			}
+
 			if sect.HasKey(name) {
 
 				k := sect.Key(name)
-				v :=k.Value()
+				v := k.Value()
 
 				flag.Set(name, v)
-				
+
 				logger.Status("Reset %s flag from config file", name)
 			}
 		})
+
 	} else {
 
 		flag.VisitAll(func(fl *flag.Flag) {
@@ -90,8 +96,8 @@ func main() {
 			v, ok := os.LookupEnv(env_name)
 
 			if ok {
-				flag.Set(name, v)
 
+				flag.Set(name, v)
 				logger.Status("Reset %s flag from %s environment variable", name, env_name)
 			}
 		})

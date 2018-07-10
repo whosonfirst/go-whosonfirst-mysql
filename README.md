@@ -119,12 +119,22 @@ Sure. You just need to write a per-table package that implements the `Table` int
 ```
 ./bin/wof-mysql-index -h
 Usage of ./bin/wof-mysql-index:
+  -all
+	Index all the tables
+  -config string
+    	  Read some or all flags from an ini-style config file. Values in the config file take precedence over command line flags.
   -dsn string
        A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'
+  -geojson
+	Index the 'geojson' tables
   -mode string
     	The mode to use importing data. Valid modes are: directory,feature,feature-collection,files,geojson-ls,meta,path,repo,sqlite. (default "repo")
+  -section string
+    	   A valid ini-style config file section. (default "wof-mysql")
   -timings
 	Display timings during and after indexing
+  -whosonfirst
+	Index the 'whosonfirst' tables
 ```
 
 For example:
@@ -132,6 +142,40 @@ For example:
 ```
 ./bin/wof-mysql-index -dsn '{USER}:{PASSWORD}@/{DATABASE}' /usr/local/data/whosonfirst-data/
 ```
+
+### Config files
+
+You can read (or override) command line flags from a config file, by passing the `-config` flag with the path to a valid ini-style config file. For example, assuming a config file like this:
+
+```
+[wof-mysql]
+dsn={USER}:{PASS}@/{DATABASE}
+all
+timings
+```
+
+You might invoke it like this:
+
+```
+./bin/wof-mysql-index -config ./test.cfg /usr/local/data/whosonfirst-data-*
+13:47:57.021711 [wof-mysql-index] STATUS Reset all flag from config file
+13:47:57.021840 [wof-mysql-index] STATUS Reset dsn flag from config file
+13:47:57.021846 [wof-mysql-index] STATUS Reset timings flag from config file
+13:48:57.037310 [wof-mysql-index] STATUS time to index geojson (3155) : 16.979713633s
+13:48:57.037329 [wof-mysql-index] STATUS time to index whosonfirst (3155) : 29.342492075s
+13:48:57.037334 [wof-mysql-index] STATUS time to index all (3155) : 1m0.013715096s
+... and so on
+```
+
+### Environment variables
+
+_Unless_ you are passing the `-config` flag you can set (or override) command line flags with environment variables. Environment variable are expected to:
+
+* Be upper-cased
+* Replace all instances of `-` with `_`
+* Be prefixed with `WOF_MYSQL`
+
+For example the `-dsn` flag would be overridden by the `WOF_MYSQL_DSN` environment variable.
 
 ## See also:
 
