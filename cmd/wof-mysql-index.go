@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/go-ini/ini"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
 	"github.com/whosonfirst/go-whosonfirst-index"
 	"github.com/whosonfirst/go-whosonfirst-index/utils"
@@ -26,6 +27,8 @@ func main() {
 	valid_modes := strings.Join(index.Modes(), ",")
 	desc_modes := fmt.Sprintf("The mode to use importing data. Valid modes are: %s.", valid_modes)
 
+	config := flag.String("config", "", "...")
+
 	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
 	mode := flag.String("mode", "repo", desc_modes)
 
@@ -37,27 +40,62 @@ func main() {
 
 	flag.Parse()
 
-	flag.VisitAll(func(fl *flag.Flag) {
-
-		name := fl.Name
-		env_name := name
-
-		env_name = strings.Replace(name, "-", "_", -1)
-		env_name = strings.ToUpper(name)
-
-		env_name = fmt.Sprintf("WOF_MYSQL_%s", env_name)
-
-		v, ok := os.LookupEnv(env_name)
-
-		if ok {
-			flag.Set(name, v)
-		}
-	})
-
 	logger := log.SimpleWOFLogger()
 
 	stdout := io.Writer(os.Stdout)
 	logger.AddLogger(stdout, "status")
+
+	if *config != "" {
+
+		cfg, err := ini.LoadSources(ini.LoadOptions{
+			AllowBooleanKeys: true,
+		}, *config)
+
+		if err != nil {
+			logger.Fatal("Unable to load config file because %s", err)
+		}
+
+		sect, err := cfg.GetSection("mysql")
+
+		if err != nil {
+			logger.Fatal("Config file is missing 'mysql' section, %s", err)
+		}
+
+		flag.VisitAll(func(fl *flag.Flag) {
+
+			name := fl.Name
+
+			if sect.HasKey(name) {
+
+				k := sect.Key(name)
+				v :=k.Value()
+
+				flag.Set(name, v)
+				
+				logger.Status("Reset %s flag from config file", name)
+			}
+		})
+	} else {
+
+		flag.VisitAll(func(fl *flag.Flag) {
+
+			name := fl.Name
+			env_name := name
+
+			env_name = strings.Replace(name, "-", "_", -1)
+			env_name = strings.ToUpper(name)
+
+			env_name = fmt.Sprintf("WOF_MYSQL_%s", env_name)
+
+			v, ok := os.LookupEnv(env_name)
+
+			if ok {
+				flag.Set(name, v)
+
+				logger.Status("Reset %s flag from %s environment variable", name, env_name)
+			}
+		})
+	}
 
 	db, err := database.NewDB(*dsn)
 
