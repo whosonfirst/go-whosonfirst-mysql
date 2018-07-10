@@ -37,6 +37,23 @@ func main() {
 
 	flag.Parse()
 
+	flag.VisitAll(func(fl *flag.Flag) {
+
+		name := fl.Name
+		env_name := name
+
+		env_name = strings.Replace(name, "-", "_", -1)
+		env_name = strings.ToUpper(name)
+
+		env_name = fmt.Sprintf("WOF_MYSQL_%s", env_name)
+
+		v, ok := os.LookupEnv(env_name)
+
+		if ok {
+			flag.Set(name, v)
+		}
+	})
+
 	logger := log.SimpleWOFLogger()
 
 	stdout := io.Writer(os.Stdout)
