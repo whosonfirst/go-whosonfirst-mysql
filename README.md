@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS geojson (
 ### whosonfirst
 
 ```
-CREATE TABLE IF NOT EXISTS whosonfirst (
+CREATE TABLE IF NOT EXISTS %s (
       id BIGINT UNSIGNED PRIMARY KEY,
       properties JSON NOT NULL,
       geometry GEOMETRY NOT NULL,
@@ -78,11 +78,11 @@ CREATE TABLE IF NOT EXISTS whosonfirst (
       lastmodified INT NOT NULL,
       parent_id BIGINT       GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:parent_id"'))) VIRTUAL,
       placetype VARCHAR(64)  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
-      is_current TINYINT     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL,
-      is_nullisland TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_nullisland"'))) VIRTUAL,
-      is_approximate TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_approximate"'))) VIRTUAL,
-      is_ceased TINYINT      GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:cessation"')) != "" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
-      is_deprecated TINYINT  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
+      is_current TINYINT     GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."mz:is_current"') AND JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL,
+      is_nullisland TINYINT  GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."mz:is_nullisland"') AND JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_nullisland"'))) VIRTUAL,
+      is_approximate TINYINT GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."mz:is_approximate"') AND JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_approximate"'))) VIRTUAL,
+      is_ceased TINYINT      GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."edtf:cessation"') AND JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:cessation"')) != "" AND JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:cessation"')) != "open" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
+      is_deprecated TINYINT  GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."edtf:deprecated"') AND JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
       is_superseded TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:superseded_by"')) > 0) VIRTUAL,
       is_superseding TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:supersedes"')) > 0) VIRTUAL,
       date_upper DATE	     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties, '$."date:cessation_upper"'))) VIRTUAL,
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS whosonfirst (
       KEY date_lower (date_lower),
       SPATIAL KEY idx_geometry (geometry),
       SPATIAL KEY idx_centroid (centroid)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ```
 
 There are a few important things to note about the `whosonfirst` table:
