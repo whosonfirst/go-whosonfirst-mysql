@@ -5,7 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/go-ini/ini"
+	"github.com/whosonfirst/go-whosonfirst-cli/flags"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
 	"github.com/whosonfirst/go-whosonfirst-index"
 	"github.com/whosonfirst/go-whosonfirst-index/utils"
@@ -48,59 +48,19 @@ func main() {
 
 	if *config != "" {
 
-		cfg, err := ini.LoadSources(ini.LoadOptions{
-			AllowBooleanKeys: true,
-		}, *config)
+		err := flags.SetFlagsFromConfig(*config, *section)
 
 		if err != nil {
-			logger.Fatal("Unable to load config file because %s", err)
+			logger.Fatal("Unable to set flags from config file because %s", err)
 		}
-
-		sect, err := cfg.GetSection(*section)
-
-		if err != nil {
-			logger.Fatal("Config file is missing 'mysql' section, %s", err)
-		}
-
-		flag.VisitAll(func(fl *flag.Flag) {
-
-			name := fl.Name
-
-			if name == "section" {
-				return
-			}
-
-			if sect.HasKey(name) {
-
-				k := sect.Key(name)
-				v := k.Value()
-
-				flag.Set(name, v)
-
-				logger.Status("Reset %s flag from config file", name)
-			}
-		})
 
 	} else {
 
-		flag.VisitAll(func(fl *flag.Flag) {
+		err := flags.SetFlagsFromEnvVars("WOF_MYSQL")
 
-			name := fl.Name
-			env_name := name
-
-			env_name = strings.Replace(name, "-", "_", -1)
-			env_name = strings.ToUpper(name)
-
-			env_name = fmt.Sprintf("WOF_MYSQL_%s", env_name)
-
-			v, ok := os.LookupEnv(env_name)
-
-			if ok {
-
-				flag.Set(name, v)
-				logger.Status("Reset %s flag from %s environment variable", name, env_name)
-			}
-		})
+		if err != nil {
+			logger.Fatal("Unable to set flags from environment variables because %s", err)
+		}
 	}
 
 	db, err := database.NewDB(*dsn)
