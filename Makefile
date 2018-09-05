@@ -48,3 +48,4 @@ fmt:
 
 bin: 	self
 	@GOPATH=$(GOPATH) go build -o bin/wof-mysql-index cmd/wof-mysql-index.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-mysql-purge cmd/wof-mysql-purge.go
