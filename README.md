@@ -154,6 +154,17 @@ all
 timings
 ```
 
+Or:
+
+```
+[wof-mysql]
+dsn={USER}:{PASS}@tcp({HOST})/{DATABASE}
+all
+timings
+```
+
+See the kind of weird `@tcp(...)` syntax? Yes, that.
+
 You might invoke it like this:
 
 ```
@@ -179,6 +190,7 @@ For example the `-dsn` flag would be overridden by the `WOF_MYSQL_DSN` environme
 
 ## See also:
 
+* https://github.com/go-sql-driver/mysql#dsn-data-source-name
 * https://dev.mysql.com/doc/refman/5.7/en/spatial-analysis-functions.html
 * https://github.com/whosonfirst/go-whosonfirst-sqlite
 
