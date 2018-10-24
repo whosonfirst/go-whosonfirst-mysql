@@ -178,6 +178,8 @@ You might invoke it like this:
 ... and so on
 ```
 
+If you are indexing large WOF records (like countries) you should make sure to append the `?maxAllowedPacket=0` query string to your DSN. Per [the documentation](https://github.com/go-sql-driver/mysql#maxallowedpacket) this will "automatically fetch the max_allowed_packet variable from server on every connection". Or you could pass it a value larger than the default (in `go-mysql`) 4MB. You may also need to set the `max_allowed_packets` setting your MySQL daemon config file. Check [the documentation](https://dev.mysql.com/doc/refman/8.0/en/packet-too-large.html) for details.
+
 ### Environment variables
 
 _Unless_ you are passing the `-config` flag you can set (or override) command line flags with environment variables. Environment variable are expected to:
