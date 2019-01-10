@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
+	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
 	"github.com/whosonfirst/go-whosonfirst-index"
 	"github.com/whosonfirst/go-whosonfirst-index/utils"
@@ -37,6 +38,7 @@ func main() {
 	index_whosonfirst := flag.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
 	index_all := flag.Bool("all", false, "Index all the tables")
 
+	liberal := flag.Bool("liberal", false, "Parse records with (go-geojson-v2) feature.LoadGeoJSONFeatureFromReader rather than feature.LoadWOFFeatureFromReader")
 	timings := flag.Bool("timings", false, "Display timings during and after indexing")
 
 	flag.Parse()
@@ -102,6 +104,27 @@ func main() {
 	table_timings := make(map[string]time.Duration)
 	mu := new(sync.RWMutex)
 
+	// this should probably be a utility function somewhere
+	// (20190110/thisisaaronland)
+
+	load_feature := func(fh io.Reader) (geojson.Feature, error) {
+
+		var f geojson.Feature
+		var err error
+
+		if *liberal {
+			f, err = feature.LoadGeoJSONFeatureFromReader(fh)
+		} else {
+			f, err = feature.LoadWOFFeatureFromReader(fh)
+		}
+
+		if err != nil && !warning.IsWarning(err) {
+			return nil, err
+		}
+
+		return f, nil
+	}
+
 	cb := func(fh io.Reader, ctx context.Context, args ...interface{}) error {
 
 		path, err := index.PathForContext(ctx)
@@ -120,7 +143,7 @@ func main() {
 			return nil
 		}
 
-		f, err := feature.LoadWOFFeatureFromReader(fh)
+		f, err := load_feature(fh)
 
 		if err != nil {
 
