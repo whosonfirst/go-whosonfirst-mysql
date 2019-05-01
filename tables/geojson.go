@@ -6,6 +6,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/utils"
+	"github.com/whosonfirst/go-whosonfirst-uri"
 	_ "log"
 )
 
@@ -44,12 +45,20 @@ func (t *GeoJSONTable) Name() string {
 	return t.name
 }
 
+/*
+ALTER TABLE geojson ADD alt VARCHAR(255) NOT NULL;
+CREATE UNIQUE INDEX id_alt ON geojson (`id`, `alt`);
+DROP INDEX `PRIMARY` ON geojson;
+*/
+
 func (t *GeoJSONTable) Schema() string {
 
 	sql := `CREATE TABLE IF NOT EXISTS %s (
-		      id BIGINT UNSIGNED PRIMARY KEY,
+		      id BIGINT UNSIGNED,
+		      alt VARCHAR(255) NOT NULL,
 		      body LONGBLOB NOT NULL,
 		      lastmodified INT NOT NULL,
+		      UNIQUE KEY id_alt (id, alt),
 		      KEY lastmodified (lastmodified)
 	      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 
@@ -62,10 +71,10 @@ func (t *GeoJSONTable) InitializeTable(db mysql.Database) error {
 }
 
 func (t *GeoJSONTable) IndexRecord(db mysql.Database, i interface{}) error {
-	return t.IndexFeature(db, i.(geojson.Feature))
+	return t.IndexFeature(db, i.(geojson.Feature), nil)
 }
 
-func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature) error {
+func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature, alt *uri.AltGeom) error {
 
 	conn, err := db.Conn()
 
@@ -80,9 +89,9 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature) error 
 	}
 
 	sql := fmt.Sprintf(`REPLACE INTO %s (
-		id, body, lastmodified
+		id, alt, body, lastmodified
 	) VALUES (
-		?, ?, ?
+		?, ?, ?, ?
 	)`, t.Name())
 
 	stmt, err := tx.Prepare(sql)
@@ -100,7 +109,13 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature) error 
 	body := f.Bytes()
 	lastmod := whosonfirst.LastModified(f)
 
-	_, err = stmt.Exec(f.Id(), string(body), lastmod)
+	str_alt := ""
+
+	if alt != nil {
+		str_alt = alt.String()
+	}
+
+	_, err = stmt.Exec(f.Id(), str_alt, string(body), lastmod)
 
 	if err != nil {
 		tx.Rollback()

@@ -3,6 +3,7 @@ package mysql
 import (
        "database/sql"
        "github.com/whosonfirst/go-whosonfirst-geojson-v2"
+       "github.com/whosonfirst/go-whosonfirst-uri"
 )
 
 type Database interface {
@@ -15,7 +16,7 @@ type Table interface {
      Name() string
      Schema() string
      InitializeTable(Database) error
-     IndexFeature(Database, geojson.Feature) error
+     IndexFeature(Database, geojson.Feature, *uri.AltGeom) error
 }
 
 // this is here so we can pass both sql.Row and sql.Rows to the

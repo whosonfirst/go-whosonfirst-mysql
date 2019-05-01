@@ -26,6 +26,7 @@ deps:
 	@GOPATH=$(GOPATH) go get -u "github.com/twpayne/go-geom"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-index"
+	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-uri"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-log"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-cli"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-names"

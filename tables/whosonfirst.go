@@ -12,6 +12,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/utils"
+	"github.com/whosonfirst/go-whosonfirst-uri"
 	_ "log"
 )
 
@@ -104,10 +105,14 @@ func (t *WhosonfirstTable) InitializeTable(db mysql.Database) error {
 }
 
 func (t *WhosonfirstTable) IndexRecord(db mysql.Database, i interface{}) error {
-	return t.IndexFeature(db, i.(geojson.Feature))
+	return t.IndexFeature(db, i.(geojson.Feature), nil)
 }
 
-func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) error {
+func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature, alt *uri.AltGeom) error {
+
+	if alt != nil {
+		return nil
+	}
 
 	conn, err := db.Conn()
 

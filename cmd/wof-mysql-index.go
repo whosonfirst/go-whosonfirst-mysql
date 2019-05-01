@@ -14,6 +14,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
+	"github.com/whosonfirst/go-whosonfirst-uri"
 	"github.com/whosonfirst/warning"
 	"io"
 	"os"
@@ -119,13 +120,22 @@ func main() {
 		}
 
 		var f geojson.Feature
+		var alt *uri.AltGeom
 
 		if is_principal {
-			f, err = feature.LoadGeoJSONFeatureFromReader(fh)
-		} else if *liberal {
-			f, err = feature.LoadGeoJSONFeatureFromReader(fh)
+
+			if *liberal {
+				f, err = feature.LoadGeoJSONFeatureFromReader(fh)
+			} else {
+				f, err = feature.LoadWOFFeatureFromReader(fh)
+			}
+
 		} else {
-			f, err = feature.LoadWOFFeatureFromReader(fh)
+			f, err = feature.LoadGeoJSONFeatureFromReader(fh)
+
+			if err == nil {
+				alt, err = uri.AltGeomFromPath(path)
+			}
 		}
 
 		if err != nil {
@@ -137,14 +147,13 @@ func main() {
 		}
 
 		db.Lock()
-
 		defer db.Unlock()
 
 		for _, t := range to_index {
 
 			t1 := time.Now()
 
-			err = t.IndexFeature(db, f)
+			err = t.IndexFeature(db, f, alt)
 
 			if err != nil {
 				logger.Warning("failed to index feature (%s) in '%s' table because %s", path, t.Name(), err)
