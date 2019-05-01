@@ -83,7 +83,6 @@ func TestIsRingCounterClockwiseNotEnoughPoints(t *testing.T) {
 		if err := recover(); err == nil {
 			t.Errorf("Expected a panic because there are not enough points")
 		}
-
 	}()
 	xy.IsRingCounterClockwise(geom.XY, []float64{0, 0, 1, 0, 1, 1})
 }
@@ -144,7 +143,6 @@ func TestIsRingCounterClockwise(t *testing.T) {
 }
 
 func make3DCopy(coords []float64) []float64 {
-
 	len := len(coords)
 	copied := make([]float64, len+(len/2))
 
@@ -158,6 +156,7 @@ func make3DCopy(coords []float64) []float64 {
 
 	return copied
 }
+
 func TestDistanceFromPointToLine(t *testing.T) {
 	for i, tc := range []struct {
 		p                  geom.Coord
@@ -440,4 +439,47 @@ func reverseCopy(coords []float64) []float64 {
 	}
 
 	return copy
+}
+
+func TestIsPointInRing(t *testing.T) {
+	for i, tc := range []struct {
+		desc   string
+		p      geom.Coord
+		ring   []float64
+		layout geom.Layout
+		within bool
+	}{
+		{
+			desc:   "Point in ring",
+			p:      geom.Coord{0, 0},
+			ring:   []float64{-1, -1, 1, -1, 1, 1, -1, 1, -1, -1},
+			layout: geom.XY,
+			within: true,
+		},
+		{
+			desc:   "Point on ring border",
+			p:      geom.Coord{-1, 0},
+			ring:   []float64{-1, -1, 1, -1, 1, 1, -1, 1, -1, -1},
+			layout: geom.XY,
+			within: true,
+		},
+		{
+			desc:   "Point on ring vertex",
+			p:      geom.Coord{-1, -1},
+			ring:   []float64{-1, -1, 1, -1, 1, 1, -1, 1, -1, -1},
+			layout: geom.XY,
+			within: true,
+		},
+		{
+			desc:   "Point outside of ring",
+			p:      geom.Coord{-2, -1},
+			ring:   []float64{-1, -1, 1, -1, 1, 1, -1, 1, -1, -1},
+			layout: geom.XY,
+			within: false,
+		},
+	} {
+		if tc.within != xy.IsPointInRing(tc.layout, tc.p, tc.ring) {
+			t.Errorf("Test '%v' (%v) failed: expected \n%v but was \n%v", i+1, tc.desc, tc.within, !tc.within)
+		}
+	}
 }
