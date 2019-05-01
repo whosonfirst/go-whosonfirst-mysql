@@ -104,27 +104,6 @@ func main() {
 	table_timings := make(map[string]time.Duration)
 	mu := new(sync.RWMutex)
 
-	// this should probably be a utility function somewhere
-	// (20190110/thisisaaronland)
-
-	load_feature := func(fh io.Reader) (geojson.Feature, error) {
-
-		var f geojson.Feature
-		var err error
-
-		if *liberal {
-			f, err = feature.LoadGeoJSONFeatureFromReader(fh)
-		} else {
-			f, err = feature.LoadWOFFeatureFromReader(fh)
-		}
-
-		if err != nil && !warning.IsWarning(err) {
-			return nil, err
-		}
-
-		return f, nil
-	}
-
 	cb := func(fh io.Reader, ctx context.Context, args ...interface{}) error {
 
 		path, err := index.PathForContext(ctx)
@@ -133,17 +112,21 @@ func main() {
 			return err
 		}
 
-		ok, err := utils.IsPrincipalWOFRecord(fh, ctx)
+		is_principal, err := utils.IsPrincipalWOFRecord(fh, ctx)
 
 		if err != nil {
 			return err
 		}
 
-		if !ok {
-			return nil
-		}
+		var f geojson.Feature
 
-		f, err := load_feature(fh)
+		if is_principal {
+			f, err = feature.LoadGeoJSONFeatureFromReader(fh)
+		} else if *liberal {
+			f, err = feature.LoadGeoJSONFeatureFromReader(fh)
+		} else {
+			f, err = feature.LoadWOFFeatureFromReader(fh)
+		}
 
 		if err != nil {
 
@@ -151,7 +134,6 @@ func main() {
 				msg := fmt.Sprintf("Unable to load %s, because %s", path, err)
 				return errors.New(msg)
 			}
-
 		}
 
 		db.Lock()
