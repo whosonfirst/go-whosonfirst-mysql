@@ -70,11 +70,17 @@ func (t *GeoJSONTable) InitializeTable(db mysql.Database) error {
 	return utils.CreateTableIfNecessary(db, t)
 }
 
-func (t *GeoJSONTable) IndexRecord(db mysql.Database, i interface{}) error {
-	return t.IndexFeature(db, i.(geojson.Feature), nil)
+func (t *GeoJSONTable) IndexRecord(db mysql.Database, i interface{}, custom ...interface{}) error {
+	return t.IndexFeature(db, i.(geojson.Feature), custom...)
 }
 
-func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature, alt *uri.AltGeom) error {
+func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature, custom ...interface{}) error {
+
+	var alt *uri.AltGeom
+
+	if len(custom) >= 1 {
+		alt = custom[0].(*uri.AltGeom)
+	}
 
 	conn, err := db.Conn()
 

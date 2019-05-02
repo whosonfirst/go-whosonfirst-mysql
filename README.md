@@ -4,7 +4,7 @@ Go package for working with Who's On First documents and MySQL databases.
 
 ## Install
 
-You will need to have both `Go` (specifically a version of Go more recent than 1.6 so let's just assume you need [Go 1.8](https://golang.org/dl/) or higher) and the `make` programs installed on your computer. Assuming you do just type:
+You will need to have both `Go` (specifically a version of Go more recent than 1.6 so let's just assume you need [Go 1.12](https://golang.org/dl/) or higher) and the `make` programs installed on your computer. Assuming you do just type:
 
 ```
 make bin
@@ -18,6 +18,35 @@ All of this package's dependencies are bundled with the code in the `vendor` dir
 2. This package assumes Who's On First documents and is not yet able to index arbitrary GeoJSON documents.
 3. This package shares the same basic model as the [go-whosonfirst-sqlite-*](https://github.com/whosonfirst?utf8=%E2%9C%93&q=go-whosonfirst-sqlite&type=&language=) packages. They should be reconciled. Today, they are not.
 4. This is not an abstract package for working with databases and tables that aren't Who's On First specific, the way [go-whosonfirst-sqlite](https://github.com/whosonfirst/go-whosonfirst-sqlite) is. It probably _should_ be but that seems like something that will happen as a result of doing #3 (above). 
+
+## Important
+
+In May 2019 backwards incompatible changes were introduced in both the MySQL schema and the Go interfaces (discussed below) in order to support indexing "alternate" geometries in the `geojson` table. The "last known good" version of `go-whosonfirst-mysql` before these changes were introduced has been tagged as [0.1.0](https://github.com/whosonfirst/go-whosonfirst-mysql/releases/tag/0.1.0).
+
+If you already have a MySQL database that you want to update you will need to apply the following changes:
+
+```
+ALTER TABLE geojson ADD alt VARCHAR(255) NOT NULL;
+CREATE UNIQUE INDEX `id_alt` ON geojson (`id`, `alt`);
+DROP INDEX `PRIMARY` ON geojson;
+```
+
+The other change to be introduced is the addition of optional but meaningful positional arguments to the `IndexRecord` and `IndexFeature` methods. Specifically if the list of optional arguments is greater or equal to one the first argument is expected to be a `go-whosonfirst-uri.AltGeom` struct (unless it is `nil`). This means the code ends up looking like this:
+
+```
+func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature, custom ...interface{}) error {
+
+	var alt *uri.AltGeom
+
+	if len(custom) >= 1 {
+		alt = custom[0].(*uri.AltGeom)
+	}
+
+	...
+}
+```
+
+I _do not_ love this. It may change again. I am not sure yet but in the interest of "getting things done" we will live it for now.
 
 ## Interfaces
 
@@ -38,19 +67,19 @@ type Table interface {
      Name() string
      Schema() string
      InitializeTable(Database) error
-     IndexRecord(Database, interface{}) error
+     IndexRecord(Database, interface{}, ...interface{}) error
 }
 ```
 
 It is left up to people implementing the `Table` interface to figure out what to do with the second value passed to the `IndexRecord` method. For example:
 
 ```
-func (t *WhosonfirstTable) IndexRecord(db mysql.Database, i interface{}) error {
-	return t.IndexFeature(db, i.(geojson.Feature))
+func (t *WhosonfirstTable) IndexRecord(db mysql.Database, i interface{}, custom ...interface{}) error {
+	return t.IndexFeature(db, i.(geojson.Feature, custom...))
 }
 
-func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) error {
-	// code to index geojson.Feature here
+func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature, custom ...interface{}) error {
+	// code to index geojson.Feature here - see notes above wrt/ positional "custom" arguments
 }
 ```
 
@@ -60,9 +89,11 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature) er
 
 ```
 CREATE TABLE IF NOT EXISTS geojson (
-      id BIGINT UNSIGNED PRIMARY KEY,
+      id BIGINT UNSIGNED,
+      alt VARCHAR(255) NOT NULL,
       body LONGBLOB NOT NULL,
       lastmodified INT NOT NULL,
+      UNIQUE KEY id_alt (id, alt),
       KEY lastmodified (lastmodified)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ```
@@ -199,5 +230,3 @@ For example the `-dsn` flag would be overridden by the `WOF_MYSQL_DSN` environme
 * https://dev.mysql.com/doc/refman/8.0/en/json-functions.html
 * https://www.percona.com/blog/2016/03/07/json-document-fast-lookup-with-mysql-5-7/
 * https://archive.fosdem.org/2016/schedule/event/mysql57_json/attachments/slides/1291/export/events/attachments/mysql57_json/slides/1291/MySQL_57_JSON.pdf
-
-

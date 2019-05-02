@@ -17,7 +17,6 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"github.com/whosonfirst/warning"
 	"io"
-	golog "log"
 	"os"
 	"strings"
 	"sync"
@@ -132,6 +131,7 @@ func main() {
 			}
 
 		} else {
+
 			f, err = feature.LoadGeoJSONFeatureFromReader(fh)
 
 			if err == nil {
@@ -149,8 +149,6 @@ func main() {
 
 		db.Lock()
 		defer db.Unlock()
-
-		golog.Println("INDEX", f.Id(), alt)
 
 		for _, t := range to_index {
 
