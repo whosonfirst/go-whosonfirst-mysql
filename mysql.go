@@ -1,22 +1,22 @@
 package mysql
 
 import (
-       "database/sql"
-       "github.com/whosonfirst/go-whosonfirst-geojson-v2"
-       _ "github.com/whosonfirst/go-whosonfirst-uri"
+	"database/sql"
+	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
+	_ "github.com/whosonfirst/go-whosonfirst-uri"
 )
 
 type Database interface {
-     Conn() (*sql.DB, error)
-     DSN() string
-     Close() error
+	Conn() (*sql.DB, error)
+	DSN() string
+	Close() error
 }
 
 type Table interface {
-     Name() string
-     Schema() string
-     InitializeTable(Database) error
-     IndexFeature(Database, geojson.Feature, ...interface{}) error
+	Name() string
+	Schema() string
+	InitializeTable(Database) error
+	IndexFeature(Database, geojson.Feature, ...interface{}) error
 }
 
 // this is here so we can pass both sql.Row and sql.Rows to the
@@ -27,7 +27,7 @@ type ResultSet interface {
 }
 
 type ResultRow interface {
-     Row() interface{}
+	Row() interface{}
 }
 
 type ResultSetFunc func(row ResultSet) (ResultRow, error)
