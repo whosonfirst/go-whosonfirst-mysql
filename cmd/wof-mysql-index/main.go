@@ -105,7 +105,7 @@ func main() {
 	table_timings := make(map[string]time.Duration)
 	mu := new(sync.RWMutex)
 
-	cb := func(fh io.Reader, ctx context.Context, args ...interface{}) error {
+	cb := func(ctx context.Context, fh io.Reader, args ...interface{}) error {
 
 		path, err := index.PathForContext(ctx)
 
