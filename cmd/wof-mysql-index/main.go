@@ -1,6 +1,10 @@
 package main
 
 import (
+	_ "github.com/whosonfirst/go-whosonfirst-index/fs"
+)
+
+import (
 	"context"
 	"errors"
 	"flag"
