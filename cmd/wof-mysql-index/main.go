@@ -37,7 +37,7 @@ func main() {
 	section := flag.String("section", "wof-mysql", "A valid ini-style config file section.")
 
 	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
-	mode := flag.String("mode", "repo", desc_modes)
+	mode := flag.String("mode", "repo://", desc_modes)
 
 	index_geojson := flag.Bool("geojson", false, "Index the 'geojson' tables")
 	index_whosonfirst := flag.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
