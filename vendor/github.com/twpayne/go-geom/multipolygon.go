@@ -30,11 +30,6 @@ func (g *MultiPolygon) Clone() *MultiPolygon {
 	return deriveCloneMultiPolygon(g)
 }
 
-// Empty returns true if the collection is empty.
-func (g *MultiPolygon) Empty() bool {
-	return g.NumPolygons() == 0
-}
-
 // Length returns the sum of the perimeters of the Polygons.
 func (g *MultiPolygon) Length() float64 {
 	return length3(g.flatCoords, 0, g.endss, g.stride)
@@ -56,7 +51,12 @@ func (g *MultiPolygon) Polygon(i int) *Polygon {
 	offset := 0
 	if i > 0 {
 		ends := g.endss[i-1]
-		offset = ends[len(ends)-1]
+		if len(ends) > 0 {
+			offset = ends[len(ends)-1]
+		}
+	}
+	if len(g.endss[i]) == 0 {
+		return NewPolygon(g.layout)
 	}
 	ends := make([]int, len(g.endss[i]))
 	if offset == 0 {

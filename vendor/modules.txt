@@ -16,7 +16,7 @@ github.com/tidwall/gjson
 github.com/tidwall/match
 # github.com/tidwall/pretty v1.0.0
 github.com/tidwall/pretty
-# github.com/twpayne/go-geom v1.0.6
+# github.com/twpayne/go-geom v1.3.0
 github.com/twpayne/go-geom
 github.com/twpayne/go-geom/encoding/geojson
 github.com/twpayne/go-geom/encoding/wkt
@@ -36,7 +36,7 @@ github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst
 github.com/whosonfirst/go-whosonfirst-geojson-v2/utils
 # github.com/whosonfirst/go-whosonfirst-hash v0.1.0
 github.com/whosonfirst/go-whosonfirst-hash
-# github.com/whosonfirst/go-whosonfirst-index v0.2.3
+# github.com/whosonfirst/go-whosonfirst-index v0.3.0
 github.com/whosonfirst/go-whosonfirst-index
 github.com/whosonfirst/go-whosonfirst-index/fs
 github.com/whosonfirst/go-whosonfirst-index/utils
