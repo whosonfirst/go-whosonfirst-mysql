@@ -8,7 +8,7 @@ require (
 	github.com/twpayne/go-geom v1.3.0
 	github.com/whosonfirst/go-whosonfirst-cli v0.1.0
 	github.com/whosonfirst/go-whosonfirst-geojson-v2 v0.12.3
-	github.com/whosonfirst/go-whosonfirst-index v0.3.0
+	github.com/whosonfirst/go-whosonfirst-index v0.3.1
 	github.com/whosonfirst/go-whosonfirst-log v0.1.0
 	github.com/whosonfirst/go-whosonfirst-uri v0.2.0
 	github.com/whosonfirst/warning v0.1.1
