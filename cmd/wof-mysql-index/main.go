@@ -1,8 +1,7 @@
 package main
 
 import (
-	_ "github.com/whosonfirst/go-whosonfirst-index/fs"
-	_ "github.com/whosonfirst/go-whosonfirst-index-git"	
+	_ "github.com/whosonfirst/go-whosonfirst-iterate-git"	
 )
 
 import (
@@ -13,8 +12,8 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
-	"github.com/whosonfirst/go-whosonfirst-index"
-	"github.com/whosonfirst/go-whosonfirst-index/utils"
+	"github.com/whosonfirst/go-whosonfirst-iterate/iterator"
+	"github.com/whosonfirst/go-whosonfirst-iterate/emitter"
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
@@ -23,7 +22,6 @@ import (
 	"github.com/whosonfirst/warning"
 	"io"
 	"os"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,14 +29,11 @@ import (
 
 func main() {
 
-	valid_modes := strings.Join(index.Modes(), ",")
-	desc_modes := fmt.Sprintf("The mode to use importing data. Valid modes are: %s.", valid_modes)
-
 	config := flag.String("config", "", "Read some or all flags from an ini-style config file. Values in the config file take precedence over command line flags.")
 	section := flag.String("section", "wof-mysql", "A valid ini-style config file section.")
 
 	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
-	mode := flag.String("mode", "repo://", desc_modes)
+	mode := flag.String("mode", "repo://", "A valid whosonfirst/go-whosonfirst-iterate URI" )
 
 	index_geojson := flag.Bool("geojson", false, "Index the 'geojson' tables")
 	index_whosonfirst := flag.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
@@ -49,6 +44,8 @@ func main() {
 
 	flag.Parse()
 
+	ctx := context.Background()
+	
 	logger := log.SimpleWOFLogger()
 
 	stdout := io.Writer(os.Stdout)
@@ -110,24 +107,25 @@ func main() {
 	table_timings := make(map[string]time.Duration)
 	mu := new(sync.RWMutex)
 
-	cb := func(ctx context.Context, fh io.Reader, args ...interface{}) error {
+	iter_cb := func(ctx context.Context, fh io.ReadSeeker, args ...interface{}) error {
 
-		path, err := index.PathForContext(ctx)
-
-		if err != nil {
-			return err
-		}
-
-		is_principal, err := utils.IsPrincipalWOFRecord(fh, ctx)
+		path, err := emitter.PathForContext(ctx)
 
 		if err != nil {
 			return err
 		}
+
+		_, uri_args, err := uri.ParseURI(path)
+
+		if err != nil {
+			return err
+		}
+		
 
 		var f geojson.Feature
 		var alt *uri.AltGeom
 
-		if is_principal {
+		if !uri_args.IsAlternate {
 
 			if *liberal {
 				f, err = feature.LoadGeoJSONFeatureFromReader(fh)
@@ -186,10 +184,10 @@ func main() {
 		return nil
 	}
 
-	indexer, err := index.NewIndexer(*mode, cb)
+	iter, err := iterator.NewIterator(ctx, *mode, iter_cb)
 
 	if err != nil {
-		logger.Fatal("Failed to create new indexer because: %s", err)
+		logger.Fatal("Failed to create new iterator because: %s", err)
 	}
 
 	done_ch := make(chan bool)
@@ -199,7 +197,7 @@ func main() {
 
 		t2 := time.Since(t1)
 
-		i := atomic.LoadInt64(&indexer.Indexed) // please just make this part of go-whosonfirst-index
+		i := atomic.LoadInt64(&iter.Seen) // please just make this part of go-whosonfirst-index
 
 		mu.RLock()
 		defer mu.RUnlock()
@@ -231,7 +229,8 @@ func main() {
 		}()
 	}
 
-	err = indexer.IndexPaths(flag.Args())
+	to_iterate := flag.Args()
+	err = iter.IterateURIs(ctx, to_iterate...)
 
 	if err != nil {
 		logger.Fatal("Failed to index paths in %s mode because: %s", *mode, err)
