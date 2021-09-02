@@ -2,16 +2,6 @@
 
 Go package for working with Who's On First documents and MySQL databases.
 
-## Install
-
-You will need to have both `Go` (specifically version [1.12](https://golang.org/dl/) or higher) and the `make` programs installed on your computer. Assuming you do just type:
-
-```
-make tools
-```
-
-All of this package's dependencies are bundled with the code in the `vendor` directory.
-
 ## A few things before we get started
 
 1. This package assumes you are running a version of [MySQL](https://dev.mysql.com/doc/refman/5.7/en/spatial-analysis-functions.html) (or [MariaDB](https://mariadb.com/kb/en/library/geographic-geometric-features/)) with spatial extensions, so version 5.7 or higher.
