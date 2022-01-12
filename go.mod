@@ -8,8 +8,8 @@ require (
 	github.com/twpayne/go-geom v1.4.1
 	github.com/whosonfirst/go-whosonfirst-cli v0.1.0
 	github.com/whosonfirst/go-whosonfirst-geojson-v2 v0.16.3
-	github.com/whosonfirst/go-whosonfirst-iterate v1.2.0
-	github.com/whosonfirst/go-whosonfirst-iterate-git v1.0.2
+	github.com/whosonfirst/go-whosonfirst-iterate-git/v2 v2.0.0
+	github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.0.1
 	github.com/whosonfirst/go-whosonfirst-log v0.1.0
 	github.com/whosonfirst/go-whosonfirst-uri v1.1.0
 	github.com/whosonfirst/warning v0.1.1

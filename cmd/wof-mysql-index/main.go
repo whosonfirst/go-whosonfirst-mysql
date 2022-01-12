@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "github.com/whosonfirst/go-whosonfirst-iterate-git"	
+	_ "github.com/whosonfirst/go-whosonfirst-iterate-git/v2"	
 )
 
 import (
@@ -12,8 +12,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
-	"github.com/whosonfirst/go-whosonfirst-iterate/iterator"
-	"github.com/whosonfirst/go-whosonfirst-iterate/emitter"
+	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
@@ -107,13 +106,8 @@ func main() {
 	table_timings := make(map[string]time.Duration)
 	mu := new(sync.RWMutex)
 
-	iter_cb := func(ctx context.Context, fh io.ReadSeeker, args ...interface{}) error {
+	iter_cb := func(ctx context.Context, path string, fh io.ReadSeeker, args ...interface{}) error {
 
-		path, err := emitter.PathForContext(ctx)
-
-		if err != nil {
-			return err
-		}
 
 		_, uri_args, err := uri.ParseURI(path)
 
