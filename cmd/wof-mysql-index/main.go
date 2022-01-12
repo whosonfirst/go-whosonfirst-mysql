@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "github.com/whosonfirst/go-whosonfirst-iterate-git/v2"	
+	_ "github.com/whosonfirst/go-whosonfirst-iterate-git/v2"
 )
 
 import (
@@ -32,7 +32,7 @@ func main() {
 	section := flag.String("section", "wof-mysql", "A valid ini-style config file section.")
 
 	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
-	mode := flag.String("mode", "repo://", "A valid whosonfirst/go-whosonfirst-iterate URI" )
+	mode := flag.String("mode", "repo://", "A valid whosonfirst/go-whosonfirst-iterate URI")
 
 	index_geojson := flag.Bool("geojson", false, "Index the 'geojson' tables")
 	index_whosonfirst := flag.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
@@ -44,7 +44,7 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	
+
 	logger := log.SimpleWOFLogger()
 
 	stdout := io.Writer(os.Stdout)
@@ -108,13 +108,11 @@ func main() {
 
 	iter_cb := func(ctx context.Context, path string, fh io.ReadSeeker, args ...interface{}) error {
 
-
 		_, uri_args, err := uri.ParseURI(path)
 
 		if err != nil {
 			return err
 		}
-		
 
 		var f geojson.Feature
 		var alt *uri.AltGeom

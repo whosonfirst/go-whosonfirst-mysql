@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
+	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
 	"github.com/whosonfirst/go-whosonfirst-log"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
+	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
 	"os"
 )
@@ -18,6 +21,8 @@ func main() {
 	section := flag.String("section", "wof-mysql", "A valid ini-style config file section.")
 
 	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
+
+	iterator_uri := flag.String("iterator-uri", "", "A valid whosonfirst/go-whosonfirst-iterate/v2 URI to determine records to purge.")
 
 	purge_geojson := flag.Bool("geojson", false, "Purge the 'geojson' tables")
 	purge_whosonfirst := flag.Bool("whosonfirst", false, "Purge the 'whosonfirst' tables")
@@ -83,38 +88,101 @@ func main() {
 		logger.Fatal("You forgot to specify which (any) tables to purge")
 	}
 
+	ctx := context.Background()
+
 	conn, err := db.Conn()
 
 	if err != nil {
 		logger.Fatal("Failed to create DB conn, because %s", err)
 	}
 
-	tx, err := conn.Begin()
+	if *iterator_uri != "" {
 
-	if err != nil {
-		logger.Fatal("Failed create transaction, because %s", err)
-	}
+		uris := flag.Args()
 
-	for _, t := range to_purge {
+		iter_cb := func(ctx context.Context, path string, r io.ReadSeeker, args ...interface{}) error {
 
-		sql := fmt.Sprintf("DELETE FROM %s", t.Name())
-		stmt, err := tx.Prepare(sql)
+			id, _, err := uri.ParseURI(path)
 
-		if err != nil {
-			logger.Fatal("Failed to prepare statement (%s), because %s", sql, err)
+			if err != nil {
+				return fmt.Errorf("Failed to parse %s, %w", path, err)
+			}
+
+			tx, err := conn.Begin()
+
+			if err != nil {
+				return fmt.Errorf("Failed create transaction, because %w", err)
+			}
+
+			for _, t := range to_purge {
+
+				sql := fmt.Sprintf("DELETE FROM %s WHERE id = ?", t.Name())
+				stmt, err := tx.Prepare(sql)
+
+				if err != nil {
+					return fmt.Errorf("Failed to prepare statement (%s), because %w", sql, err)
+				}
+
+				_, err = stmt.Exec(id)
+
+				if err != nil {
+					return fmt.Errorf("Failed to execute statement (%s, %d), because %w", sql, id, err)
+				}
+			}
+
+			err = tx.Commit()
+
+			if err != nil {
+				fmt.Errorf("Failed to commit transaction to purge %d, because %w", id, err)
+			}
+
+			return nil
 		}
 
-		_, err = stmt.Exec()
+		iter, err := iterator.NewIterator(ctx, *iterator_uri, iter_cb)
 
 		if err != nil {
-			logger.Fatal("Failed to execute statement (%s), because %s", sql, err)
+			logger.Fatal("Failed to create iterator, %v", err)
 		}
-	}
 
-	err = tx.Commit()
+		err = iter.IterateURIs(ctx, uris...)
 
-	if err != nil {
-		logger.Fatal("Failed to commit transaction, because %s", err)
+		if err != nil {
+			logger.Fatal("Failed to iterate URIs, %v", err)
+		}
+
+	} else {
+
+		//
+
+		tx, err := conn.Begin()
+
+		if err != nil {
+			logger.Fatal("Failed create transaction, because %s", err)
+		}
+
+		for _, t := range to_purge {
+
+			sql := fmt.Sprintf("DELETE FROM %s", t.Name())
+			stmt, err := tx.Prepare(sql)
+
+			if err != nil {
+				logger.Fatal("Failed to prepare statement (%s), because %s", sql, err)
+			}
+
+			_, err = stmt.Exec()
+
+			if err != nil {
+				logger.Fatal("Failed to execute statement (%s), because %s", sql, err)
+			}
+		}
+
+		err = tx.Commit()
+
+		if err != nil {
+			logger.Fatal("Failed to commit transaction, because %s", err)
+		}
+
 	}
 
 	os.Exit(0)

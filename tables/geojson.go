@@ -118,7 +118,7 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature, custom
 	str_alt := ""
 
 	if alt != nil {
-		
+
 		str_alt, err = alt.String()
 
 		if err != nil {
