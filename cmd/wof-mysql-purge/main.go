@@ -4,12 +4,11 @@ import (
 	"context"
 	"flag"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
-	"github.com/whosonfirst/go-whosonfirst-log"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
 	"github.com/whosonfirst/go-whosonfirst-mysql/prune"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
-	"io"
+	"log"
 	"os"
 )
 
@@ -29,17 +28,15 @@ func main() {
 
 	flag.Parse()
 
-	logger := log.SimpleWOFLogger()
-
-	stdout := io.Writer(os.Stdout)
-	logger.AddLogger(stdout, "status")
+	ctx := context.Background()
+	logger := log.Default()
 
 	if *config != "" {
 
 		err := flags.SetFlagsFromConfig(*config, *section)
 
 		if err != nil {
-			logger.Fatal("Unable to set flags from config file because %s", err)
+			logger.Fatalf("Unable to set flags from config file because %s", err)
 		}
 
 	} else {
@@ -47,14 +44,14 @@ func main() {
 		err := flags.SetFlagsFromEnvVars("WOF_MYSQL")
 
 		if err != nil {
-			logger.Fatal("Unable to set flags from environment variables because %s", err)
+			logger.Fatalf("Unable to set flags from environment variables because %s", err)
 		}
 	}
 
 	db, err := database.NewDB(*dsn)
 
 	if err != nil {
-		logger.Fatal("unable to create database (%s) because %s", *dsn, err)
+		logger.Fatalf("unable to create database (%s) because %s", *dsn, err)
 	}
 
 	defer db.Close()
@@ -66,7 +63,7 @@ func main() {
 		tbl, err := tables.NewGeoJSONTable()
 
 		if err != nil {
-			logger.Fatal("failed to create 'geojson' table because %s", err)
+			logger.Fatalf("failed to create 'geojson' table because %s", err)
 		}
 
 		to_purge = append(to_purge, tbl)
@@ -77,24 +74,22 @@ func main() {
 		tbl, err := tables.NewWhosonfirstTable()
 
 		if err != nil {
-			logger.Fatal("failed to create 'whosonfirst' table because %s", err)
+			logger.Fatalf("failed to create 'whosonfirst' table because %s", err)
 		}
 
 		to_purge = append(to_purge, tbl)
 	}
 
 	if len(to_purge) == 0 {
-		logger.Fatal("You forgot to specify which (any) tables to purge")
+		logger.Fatalf("You forgot to specify which (any) tables to purge")
 	}
-
-	ctx := context.Background()
 
 	if *iterator_uri != "" {
 
 		err := prune.PruneTablesWithIterator(ctx, *iterator_uri, *iterator_source, db, to_purge...)
 
 		if err != nil {
-			logger.Fatal("Failed to prune tables with iterator, %v", err)
+			logger.Fatalf("Failed to prune tables with iterator, %v", err)
 		}
 
 	} else {
@@ -102,7 +97,7 @@ func main() {
 		err := prune.PruneTables(ctx, db, to_purge...)
 
 		if err != nil {
-			logger.Fatal("Failed to prune tables, %v", err)
+			logger.Fatalf("Failed to prune tables, %v", err)
 		}
 
 	}

@@ -6,20 +6,15 @@ import (
 
 import (
 	"context"
-	"errors"
 	"flag"
-	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
 	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
-	"github.com/whosonfirst/go-whosonfirst-log"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
 	"github.com/whosonfirst/go-whosonfirst-uri"
-	"github.com/whosonfirst/warning"
 	"io"
+	"log"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -38,24 +33,20 @@ func main() {
 	index_whosonfirst := flag.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
 	index_all := flag.Bool("all", false, "Index all the tables")
 
-	liberal := flag.Bool("liberal", false, "Parse records with (go-geojson-v2) feature.LoadGeoJSONFeatureFromReader rather than feature.LoadWOFFeatureFromReader")
 	timings := flag.Bool("timings", false, "Display timings during and after indexing")
 
 	flag.Parse()
 
 	ctx := context.Background()
 
-	logger := log.SimpleWOFLogger()
-
-	stdout := io.Writer(os.Stdout)
-	logger.AddLogger(stdout, "status")
+	logger := log.Default()
 
 	if *config != "" {
 
 		err := flags.SetFlagsFromConfig(*config, *section)
 
 		if err != nil {
-			logger.Fatal("Unable to set flags from config file because %s", err)
+			logger.Fatalf("Unable to set flags from config file because %s", err)
 		}
 
 	} else {
@@ -63,14 +54,14 @@ func main() {
 		err := flags.SetFlagsFromEnvVars("WOF_MYSQL")
 
 		if err != nil {
-			logger.Fatal("Unable to set flags from environment variables because %s", err)
+			logger.Fatalf("Unable to set flags from environment variables because %s", err)
 		}
 	}
 
 	db, err := database.NewDB(*dsn)
 
 	if err != nil {
-		logger.Fatal("unable to create database (%s) because %s", *dsn, err)
+		logger.Fatalf("unable to create database (%s) because %s", *dsn, err)
 	}
 
 	defer db.Close()
@@ -82,7 +73,7 @@ func main() {
 		tbl, err := tables.NewGeoJSONTableWithDatabase(db)
 
 		if err != nil {
-			logger.Fatal("failed to create 'geojson' table because %s", err)
+			logger.Fatalf("failed to create 'geojson' table because %s", err)
 		}
 
 		to_index = append(to_index, tbl)
@@ -93,14 +84,14 @@ func main() {
 		tbl, err := tables.NewWhosonfirstTableWithDatabase(db)
 
 		if err != nil {
-			logger.Fatal("failed to create 'whosonfirst' table because %s", err)
+			logger.Fatalf("failed to create 'whosonfirst' table because %s", err)
 		}
 
 		to_index = append(to_index, tbl)
 	}
 
 	if len(to_index) == 0 {
-		logger.Fatal("You forgot to specify which (any) tables to index")
+		logger.Fatalf("You forgot to specify which (any) tables to index")
 	}
 
 	table_timings := make(map[string]time.Duration)
@@ -114,32 +105,10 @@ func main() {
 			return err
 		}
 
-		var f geojson.Feature
-		var alt *uri.AltGeom
-
-		if !uri_args.IsAlternate {
-
-			if *liberal {
-				f, err = feature.LoadGeoJSONFeatureFromReader(fh)
-			} else {
-				f, err = feature.LoadWOFFeatureFromReader(fh)
-			}
-
-		} else {
-
-			f, err = feature.LoadGeoJSONFeatureFromReader(fh)
-
-			if err == nil {
-				alt, err = uri.AltGeomFromPath(path)
-			}
-		}
+		body, err := io.ReadAll(fh)
 
 		if err != nil {
-
-			if err != nil && !warning.IsWarning(err) {
-				msg := fmt.Sprintf("Unable to load %s, because %s", path, err)
-				return errors.New(msg)
-			}
+			return err
 		}
 
 		db.Lock()
@@ -149,10 +118,10 @@ func main() {
 
 			t1 := time.Now()
 
-			err = t.IndexFeature(db, f, alt)
+			err = t.IndexFeature(db, body, uri_args.IsAlternate)
 
 			if err != nil {
-				logger.Warning("failed to index feature (%s) in '%s' table because %s", path, t.Name(), err)
+				logger.Printf("Failed to index feature (%s) in '%s' table because %s", path, t.Name(), err)
 				return nil
 			}
 
@@ -179,7 +148,7 @@ func main() {
 	iter, err := iterator.NewIterator(ctx, *mode, iter_cb)
 
 	if err != nil {
-		logger.Fatal("Failed to create new iterator because: %s", err)
+		logger.Fatalf("Failed to create new iterator because: %s", err)
 	}
 
 	done_ch := make(chan bool)
@@ -195,10 +164,10 @@ func main() {
 		defer mu.RUnlock()
 
 		for t, d := range table_timings {
-			logger.Status("time to index %s (%d) : %v", t, i, d)
+			logger.Printf("Time to index %s (%d) : %v", t, i, d)
 		}
 
-		logger.Status("time to index all (%d) : %v", i, t2)
+		logger.Printf("Time to index all (%d) : %v", i, t2)
 	}
 
 	if *timings {
@@ -225,7 +194,7 @@ func main() {
 	err = iter.IterateURIs(ctx, to_iterate...)
 
 	if err != nil {
-		logger.Fatal("Failed to index paths in %s mode because: %s", *mode, err)
+		logger.Fatalf("Failed to index paths in %s mode because: %s", *mode, err)
 	}
 
 	os.Exit(0)

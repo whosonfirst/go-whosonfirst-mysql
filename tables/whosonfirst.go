@@ -3,17 +3,12 @@ package tables
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/tidwall/gjson"
-	"github.com/twpayne/go-geom"
-	gogeom_geojson "github.com/twpayne/go-geom/encoding/geojson"
-	"github.com/twpayne/go-geom/encoding/wkt"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/geometry"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
+	"github.com/whosonfirst/go-whosonfirst-feature/geometry"
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
-	"github.com/whosonfirst/go-whosonfirst-mysql/utils"
 	"github.com/whosonfirst/go-whosonfirst-uri"
-	_ "log"
 )
 
 type WhosonfirstTable struct {
@@ -101,14 +96,20 @@ func (t *WhosonfirstTable) Schema() string {
 
 func (t *WhosonfirstTable) InitializeTable(db mysql.Database) error {
 
-	return utils.CreateTableIfNecessary(db, t)
+	return mysql.CreateTableIfNecessary(db, t)
 }
 
 func (t *WhosonfirstTable) IndexRecord(db mysql.Database, i interface{}, custom ...interface{}) error {
-	return t.IndexFeature(db, i.(geojson.Feature), custom...)
+	return t.IndexFeature(db, i.([]byte), custom...)
 }
 
-func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature, custom ...interface{}) error {
+func (t *WhosonfirstTable) IndexFeature(db mysql.Database, body []byte, custom ...interface{}) error {
+
+	id, err := properties.Id(body)
+
+	if err != nil {
+		return err
+	}
 
 	var alt *uri.AltGeom
 
@@ -132,30 +133,22 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature, cu
 		return err
 	}
 
-	str_geom, err := geometry.ToString(f)
+	geojson_geom, err := geometry.Geometry(body)
 
 	if err != nil {
 		return err
 	}
 
-	var g geom.T
-	err = gogeom_geojson.Unmarshal([]byte(str_geom), &g)
+	orb_geom := geojson_geom.Geometry()
+	wkt_geom := wkt.MarshalString(orb_geom)
+
+	centroid, _, err := properties.Centroid(body)
 
 	if err != nil {
 		return err
 	}
 
-	wkt_geom, err := wkt.Marshal(g)
-
-	centroid, err := whosonfirst.Centroid(f)
-
-	if err != nil {
-		return err
-	}
-
-	coord := centroid.Coord()
-
-	wkt_centroid := fmt.Sprintf("POINT(%0.6f %0.6f)", coord.X, coord.Y)
+	wkt_centroid := wkt.MarshalString(centroid)
 
 	sql := fmt.Sprintf(`REPLACE INTO %s (
 		geometry, centroid, id, properties, lastmodified
@@ -171,16 +164,16 @@ func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature, cu
 
 	defer stmt.Close()
 
-	props := gjson.GetBytes(f.Bytes(), "properties")
+	props := gjson.GetBytes(body, "properties")
 	props_json, err := json.Marshal(props.Value())
 
 	if err != nil {
 		return err
 	}
 
-	lastmod := whosonfirst.LastModified(f)
+	lastmod := properties.LastModified(body)
 
-	_, err = stmt.Exec(f.Id(), string(props_json), lastmod)
+	_, err = stmt.Exec(id, string(props_json), lastmod)
 
 	if err != nil {
 		tx.Rollback()

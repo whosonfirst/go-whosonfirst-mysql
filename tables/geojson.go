@@ -2,10 +2,8 @@ package tables
 
 import (
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
-	"github.com/whosonfirst/go-whosonfirst-mysql/utils"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	_ "log"
 )
@@ -67,14 +65,20 @@ func (t *GeoJSONTable) Schema() string {
 
 func (t *GeoJSONTable) InitializeTable(db mysql.Database) error {
 
-	return utils.CreateTableIfNecessary(db, t)
+	return mysql.CreateTableIfNecessary(db, t)
 }
 
 func (t *GeoJSONTable) IndexRecord(db mysql.Database, i interface{}, custom ...interface{}) error {
-	return t.IndexFeature(db, i.(geojson.Feature), custom...)
+	return t.IndexFeature(db, i.([]byte), custom...)
 }
 
-func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature, custom ...interface{}) error {
+func (t *GeoJSONTable) IndexFeature(db mysql.Database, body []byte, custom ...interface{}) error {
+
+	id, err := properties.Id(body)
+
+	if err != nil {
+		return err
+	}
 
 	var alt *uri.AltGeom
 
@@ -112,8 +116,7 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature, custom
 		return err
 	}
 
-	body := f.Bytes()
-	lastmod := whosonfirst.LastModified(f)
+	lastmod := properties.LastModified(body)
 
 	str_alt := ""
 
@@ -126,7 +129,7 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature, custom
 		}
 	}
 
-	_, err = stmt.Exec(f.Id(), str_alt, string(body), lastmod)
+	_, err = stmt.Exec(id, str_alt, string(body), lastmod)
 
 	if err != nil {
 		tx.Rollback()
