@@ -1,9 +1,11 @@
 package database
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	_ "log"
+	"net/url"
 	"sync"
 )
 
@@ -13,7 +15,18 @@ type MySQLDatabase struct {
 	mu   *sync.Mutex
 }
 
-func NewDB(dsn string) (*MySQLDatabase, error) {
+func NewDB(ctx context.Context, uri string) (*MySQLDatabase, error) {
+
+	u, err := url.Parse(uri)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse URI, %w", err)
+	}
+
+	q := u.Query()
+	dsn := q.Get("dsn")
+
+	// if u.Path read config...
 
 	conn, err := sql.Open("mysql", dsn)
 

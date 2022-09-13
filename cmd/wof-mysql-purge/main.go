@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"flag"
-	"github.com/whosonfirst/go-whosonfirst-cli/flags"
+	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
 	"github.com/whosonfirst/go-whosonfirst-mysql/prune"
@@ -14,44 +13,32 @@ import (
 
 func main() {
 
-	config := flag.String("config", "", "Read some or all flags from an ini-style config file. Values in the config file take precedence over command line flags.")
-	section := flag.String("section", "wof-mysql", "A valid ini-style config file section.")
+	fs := flagset.NewFlagSet("purge")
 
-	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
+	database_uri := fs.String("database-uri", "", "")
 
-	iterator_uri := flag.String("iterator-uri", "", "A valid whosonfirst/go-whosonfirst-iterate/v2 URI to determine records to purge.")
-	iterator_source := flag.String("iterator-source", "", "A valid URI to iterator records with")
+	iterator_uri := fs.String("iterator-uri", "", "A valid whosonfirst/go-whosonfirst-iterate/v2 URI to determine records to purge.")
+	iterator_source := fs.String("iterator-source", "", "A valid URI to iterator records with")
 
-	purge_geojson := flag.Bool("geojson", false, "Purge the 'geojson' tables")
-	purge_whosonfirst := flag.Bool("whosonfirst", false, "Purge the 'whosonfirst' tables")
-	purge_all := flag.Bool("all", false, "Purge all the tables")
+	purge_geojson := fs.Bool("geojson", false, "Purge the 'geojson' tables")
+	purge_whosonfirst := fs.Bool("whosonfirst", false, "Purge the 'whosonfirst' tables")
+	purge_all := fs.Bool("all", false, "Purge all the tables")
 
-	flag.Parse()
+	flagset.Parse(fs)
 
 	ctx := context.Background()
 	logger := log.Default()
 
-	if *config != "" {
-
-		err := flags.SetFlagsFromConfig(*config, *section)
-
-		if err != nil {
-			logger.Fatalf("Unable to set flags from config file because %s", err)
-		}
-
-	} else {
-
-		err := flags.SetFlagsFromEnvVars("WOF_MYSQL")
-
-		if err != nil {
-			logger.Fatalf("Unable to set flags from environment variables because %s", err)
-		}
-	}
-
-	db, err := database.NewDB(*dsn)
+	err := flagset.SetFlagsFromEnvVars(fs, "WOF")
 
 	if err != nil {
-		logger.Fatalf("unable to create database (%s) because %s", *dsn, err)
+		logger.Fatalf("Failed to set flags from environment variables, %v", err)
+	}
+
+	db, err := database.NewDB(ctx, *database_uri)
+
+	if err != nil {
+		logger.Fatalf("unable to create database because %v", err)
 	}
 
 	defer db.Close()

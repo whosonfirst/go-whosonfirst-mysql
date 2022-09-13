@@ -6,8 +6,7 @@ import (
 
 import (
 	"context"
-	"flag"
-	"github.com/whosonfirst/go-whosonfirst-cli/flags"
+	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/database"
@@ -23,45 +22,33 @@ import (
 
 func main() {
 
-	config := flag.String("config", "", "Read some or all flags from an ini-style config file. Values in the config file take precedence over command line flags.")
-	section := flag.String("section", "wof-mysql", "A valid ini-style config file section.")
+	fs := flagset.NewFlagSet("index")
 
-	dsn := flag.String("dsn", "", "A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'")
-	mode := flag.String("mode", "repo://", "A valid whosonfirst/go-whosonfirst-iterate URI")
+	database_uri := fs.String("database-uri", "", "")
 
-	index_geojson := flag.Bool("geojson", false, "Index the 'geojson' tables")
-	index_whosonfirst := flag.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
-	index_all := flag.Bool("all", false, "Index all the tables")
+	iterator_uri := fs.String("iterator-uri", "repo://", "A valid whosonfirst/go-whosonfirst-iterate/v2 URI")
 
-	timings := flag.Bool("timings", false, "Display timings during and after indexing")
+	index_geojson := fs.Bool("geojson", false, "Index the 'geojson' tables")
+	index_whosonfirst := fs.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
+	index_all := fs.Bool("all", false, "Index all the tables")
 
-	flag.Parse()
+	timings := fs.Bool("timings", false, "Display timings during and after indexing")
+
+	flagset.Parse(fs)
 
 	ctx := context.Background()
-
 	logger := log.Default()
 
-	if *config != "" {
-
-		err := flags.SetFlagsFromConfig(*config, *section)
-
-		if err != nil {
-			logger.Fatalf("Unable to set flags from config file because %s", err)
-		}
-
-	} else {
-
-		err := flags.SetFlagsFromEnvVars("WOF_MYSQL")
-
-		if err != nil {
-			logger.Fatalf("Unable to set flags from environment variables because %s", err)
-		}
-	}
-
-	db, err := database.NewDB(*dsn)
+	err := flagset.SetFlagsFromEnvVars(fs, "WOF")
 
 	if err != nil {
-		logger.Fatalf("unable to create database (%s) because %s", *dsn, err)
+		logger.Fatalf("Failed to set flags from environment variables, %v", err)
+	}
+
+	db, err := database.NewDB(ctx, *database_uri)
+
+	if err != nil {
+		logger.Fatalf("unable to create database because %v", err)
 	}
 
 	defer db.Close()
@@ -145,7 +132,7 @@ func main() {
 		return nil
 	}
 
-	iter, err := iterator.NewIterator(ctx, *mode, iter_cb)
+	iter, err := iterator.NewIterator(ctx, *iterator_uri, iter_cb)
 
 	if err != nil {
 		logger.Fatalf("Failed to create new iterator because: %s", err)
@@ -190,11 +177,11 @@ func main() {
 		}()
 	}
 
-	to_iterate := flag.Args()
+	to_iterate := fs.Args()
 	err = iter.IterateURIs(ctx, to_iterate...)
 
 	if err != nil {
-		logger.Fatalf("Failed to index paths in %s mode because: %s", *mode, err)
+		logger.Fatalf("Failed to index paths in %s mode because: %s", *iterator_uri, err)
 	}
 
 	os.Exit(0)
