@@ -18,13 +18,13 @@ func NewGeoJSONTableWithDatabase(db mysql.Database) (mysql.Table, error) {
 	t, err := NewGeoJSONTable()
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to create GeoJSON table, %w", err)
 	}
 
 	err = t.InitializeTable(db)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to initialize GeoJSON table, %w", err)
 	}
 
 	return t, nil
@@ -77,7 +77,7 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, body []byte, custom ...in
 	id, err := properties.Id(body)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to derive ID, %w", err)
 	}
 
 	var alt *uri.AltGeom
@@ -89,13 +89,13 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, body []byte, custom ...in
 	conn, err := db.Conn()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to create database connection, %w", err)
 	}
 
 	tx, err := conn.Begin()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to start transaction, %w", err)
 	}
 
 	sql := fmt.Sprintf(`REPLACE INTO %s (
@@ -107,14 +107,10 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, body []byte, custom ...in
 	stmt, err := tx.Prepare(sql)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to create statement, %w", err)
 	}
 
 	defer stmt.Close()
-
-	if err != nil {
-		return err
-	}
 
 	lastmod := properties.LastModified(body)
 
@@ -125,7 +121,7 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, body []byte, custom ...in
 		str_alt, err = alt.String()
 
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to stringify alt, %w", err)
 		}
 	}
 
