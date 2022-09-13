@@ -106,7 +106,7 @@ func main() {
 		if uri_args.IsAlternate {
 			alt = uri_args.AltGeom
 		}
-		
+
 		err = db.IndexFeature(ctx, to_index, body, alt)
 
 		if err != nil {

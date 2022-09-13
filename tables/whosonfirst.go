@@ -124,7 +124,11 @@ func (t *WhosonfirstTable) IndexFeature(ctx context.Context, tx *sql.Tx, body []
 		return fmt.Errorf("Failed to derive centroid, %w", err)
 	}
 
-	wkt_centroid := wkt.MarshalString(centroid)
+	// See the *centroid stuff? That's important because
+	// the code in paulmach/orb/encoding/wkt/wkt.go is type-checking
+	// on not-a-references
+
+	wkt_centroid := wkt.MarshalString(*centroid)
 
 	props := gjson.GetBytes(body, "properties")
 	props_json, err := json.Marshal(props.Value())
