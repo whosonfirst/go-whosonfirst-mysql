@@ -28,6 +28,11 @@ func NewDB(ctx context.Context, uri string) (*MySQLDatabase, error) {
 
 	// if u.Path read config...
 
+	return NewDBWithDSN(ctx, dsn)
+}
+
+func NewDBWithDSN(ctx context.Context, dsn string) (*MySQLDatabase, error) {
+
 	conn, err := sql.Open("mysql", dsn)
 
 	if err != nil {
