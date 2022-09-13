@@ -10,6 +10,7 @@ require (
 	github.com/whosonfirst/go-whosonfirst-database-sql v0.0.1
 	github.com/whosonfirst/go-whosonfirst-feature v0.0.24
 	github.com/whosonfirst/go-whosonfirst-iterate-git/v2 v2.1.1
+	github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.2.0
 	github.com/whosonfirst/go-whosonfirst-uri v1.2.0
 	github.com/whosonfirst/go-writer/v2 v2.0.0
 )
@@ -32,14 +33,12 @@ require (
 	github.com/natefinch/atomic v1.0.1 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sfomuseum/go-edtf v1.1.1 // indirect
-	github.com/sfomuseum/go-timings v1.0.0 // indirect
-	github.com/sfomuseum/iso8601duration v1.0.0 // indirect
+	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/whosonfirst/go-ioutil v1.0.2 // indirect
 	github.com/whosonfirst/go-whosonfirst-crawl v0.2.1 // indirect
 	github.com/whosonfirst/go-whosonfirst-flags v0.4.4 // indirect
-	github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.1.0 // indirect
 	github.com/whosonfirst/go-whosonfirst-sources v0.1.0 // indirect
 	github.com/whosonfirst/walk v0.0.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
