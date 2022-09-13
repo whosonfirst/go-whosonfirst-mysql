@@ -1,10 +1,13 @@
 package writer
 
 import (
+	_ "github.com/go-sql-driver/mysql"
+)
+
+import (
 	"context"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-mysql"
-	"github.com/whosonfirst/go-whosonfirst-mysql/database"
+	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
 	wof_writer "github.com/whosonfirst/go-writer/v2"
 	"io"
@@ -19,8 +22,8 @@ func init() {
 
 type MySQLWriter struct {
 	wof_writer.Writer
-	db     *database.MySQLDatabase
-	tables []mysql.Table
+	db     wof_sql.Database
+	tables []wof_sql.Table
 	logger *log.Logger
 }
 
@@ -33,15 +36,16 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 	}
 
 	q := u.Query()
-	dsn := q.Get("dsn")
 
-	db, err := database.NewDBWithDSN(ctx, dsn)
+	db_uri := fmt.Sprintf("mysql://?dsn=%s", q.Get("dsn"))
+
+	db, err := wof_sql.NewSQLDB(ctx, db_uri)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create database, %w", err)
 	}
 
-	to_index := make([]mysql.Table, 0)
+	to_index := make([]wof_sql.Table, 0)
 
 	if q.Get("geojson") != "" {
 
@@ -84,13 +88,10 @@ func (wr *MySQLWriter) Write(ctx context.Context, path string, r io.ReadSeeker) 
 		return 0, fmt.Errorf("Failed to read document, %w", err)
 	}
 
-	for _, t := range wr.tables {
+	err = wr.db.IndexFeature(ctx, wr.tables, body)
 
-		err := t.IndexFeature(ctx, wr.db, body)
-
-		if err != nil {
-			return 0, fmt.Errorf("Failed to index %s table, %w", t.Name(), err)
-		}
+	if err != nil {
+		return 0, fmt.Errorf("Failed to index %s, %w", path, err)
 	}
 
 	return 0, nil

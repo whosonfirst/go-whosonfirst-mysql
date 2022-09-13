@@ -1,18 +1,16 @@
-// package prune defines methods for removing records from MySQL tables.
 package prune
 
 import (
 	"context"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
-	"github.com/whosonfirst/go-whosonfirst-mysql"
-	"github.com/whosonfirst/go-whosonfirst-mysql/database"
+	"github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
 )
 
 // PruneTables will remove all the records in 'to_prune'
-func PruneTables(ctx context.Context, db *database.MySQLDatabase, to_prune ...mysql.Table) error {
+func PruneTables(ctx context.Context, db sql.Database, to_prune ...sql.Table) error {
 
 	conn, err := db.Conn()
 
@@ -52,7 +50,7 @@ func PruneTables(ctx context.Context, db *database.MySQLDatabase, to_prune ...my
 }
 
 // PruneTablesWithIterator will remove records emitted by an iterator (defined by 'iterator_uri' and 'iterator_source') from 'to_prune'.
-func PruneTablesWithIterator(ctx context.Context, iterator_uri string, iterator_source string, db *database.MySQLDatabase, to_prune ...mysql.Table) error {
+func PruneTablesWithIterator(ctx context.Context, iterator_uri string, iterator_source string, db sql.Database, to_prune ...sql.Table) error {
 
 	conn, err := db.Conn()
 

@@ -1,21 +1,21 @@
-package database
+package sql
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"net/url"
 	"sync"
 )
 
-type MySQLDatabase struct {
+type SQLDatabase struct {
+	Database
 	conn *sql.DB
 	dsn  string
 	mu   *sync.Mutex
 }
 
-func NewDB(ctx context.Context, uri string) (*MySQLDatabase, error) {
+func NewSQLDB(ctx context.Context, uri string) (Database, error) {
 
 	u, err := url.Parse(uri)
 
@@ -23,17 +23,12 @@ func NewDB(ctx context.Context, uri string) (*MySQLDatabase, error) {
 		return nil, fmt.Errorf("Failed to parse URI, %w", err)
 	}
 
+	driver := u.Host
+	
 	q := u.Query()
 	dsn := q.Get("dsn")
 
-	// if u.Path read config...
-
-	return NewDBWithDSN(ctx, dsn)
-}
-
-func NewDBWithDSN(ctx context.Context, dsn string) (*MySQLDatabase, error) {
-
-	conn, err := sql.Open("mysql", dsn)
+	conn, err := sql.Open(driver, dsn)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to open database, %w", err)
@@ -41,7 +36,7 @@ func NewDBWithDSN(ctx context.Context, dsn string) (*MySQLDatabase, error) {
 
 	mu := new(sync.Mutex)
 
-	db := MySQLDatabase{
+	db := SQLDatabase{
 		conn: conn,
 		dsn:  dsn,
 		mu:   mu,
@@ -50,27 +45,27 @@ func NewDBWithDSN(ctx context.Context, dsn string) (*MySQLDatabase, error) {
 	return &db, err
 }
 
-func (db *MySQLDatabase) Lock() {
+func (db *SQLDatabase) Lock() {
 	db.mu.Lock()
 }
 
-func (db *MySQLDatabase) Unlock() {
+func (db *SQLDatabase) Unlock() {
 	db.mu.Unlock()
 }
 
-func (db *MySQLDatabase) Conn() (*sql.DB, error) {
+func (db *SQLDatabase) Conn() (*sql.DB, error) {
 	return db.conn, nil
 }
 
-func (db *MySQLDatabase) DSN() string {
+func (db *SQLDatabase) DSN() string {
 	return db.dsn
 }
 
-func (db *MySQLDatabase) Close() error {
+func (db *SQLDatabase) Close() error {
 	return db.conn.Close()
 }
 
-func (db *MySQLDatabase) IndexFeature(ctx context.Context, tables []mysql.Table, body []byte, args ...interface{}) error {
+func (db *SQLDatabase) IndexFeature(ctx context.Context, tables []Table, body []byte, args ...interface{}) error {
 
 	conn, err := db.Conn()
 
@@ -79,13 +74,12 @@ func (db *MySQLDatabase) IndexFeature(ctx context.Context, tables []mysql.Table,
 	}
 
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
-	
+
 	if err != nil {
 		return fmt.Errorf("Failed to create transaction, %w", err)
 	}
 
-	for _, t := range table {
-
+	for _, t := range tables {
 
 		err := t.IndexFeature(ctx, tx, body, args...)
 
@@ -94,7 +88,7 @@ func (db *MySQLDatabase) IndexFeature(ctx context.Context, tables []mysql.Table,
 			return fmt.Errorf("Failed to index %s table, %w", t.Name(), err)
 		}
 	}
-	
+
 	err = tx.Commit()
 
 	if err != nil {

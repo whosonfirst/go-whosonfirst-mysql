@@ -2,14 +2,15 @@ package tables
 
 import (
 	"context"
+	"database/sql"
 	_ "embed"
 	"encoding/json"
 	"fmt"
 	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/tidwall/gjson"
+	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-feature/geometry"
 	"github.com/whosonfirst/go-whosonfirst-feature/properties"
-	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 )
 
@@ -19,10 +20,10 @@ var whosonfirst_schema string
 const WHOSONFIRST_TABLE string = "whosonfirst"
 
 type WhosonfirstTable struct {
-	mysql.Table
+	wof_sql.Table
 }
 
-func NewWhosonfirstTableWithDatabase(ctx context.Context, db mysql.Database) (mysql.Table, error) {
+func NewWhosonfirstTableWithDatabase(ctx context.Context, db wof_sql.Database) (wof_sql.Table, error) {
 
 	t, err := NewWhosonfirstTable(ctx)
 
@@ -39,7 +40,7 @@ func NewWhosonfirstTableWithDatabase(ctx context.Context, db mysql.Database) (my
 	return t, nil
 }
 
-func NewWhosonfirstTable(ctx context.Context) (mysql.Table, error) {
+func NewWhosonfirstTable(ctx context.Context) (wof_sql.Table, error) {
 	t := WhosonfirstTable{}
 	return &t, nil
 }
@@ -48,7 +49,7 @@ func (t *WhosonfirstTable) Name() string {
 	return WHOSONFIRST_TABLE
 }
 
-// https://dev.mysql.com/doc/refman/8.0/en/json-functions.html
+// https://dev.sql.com/doc/refman/8.0/en/json-functions.html
 // https://www.percona.com/blog/2016/03/07/json-document-fast-lookup-with-mysql-5-7/
 // https://archive.fosdem.org/2016/schedule/event/mysql57_json/attachments/slides/1291/export/events/attachments/mysql57_json/slides/1291/MySQL_57_JSON.pdf
 
@@ -56,16 +57,41 @@ func (t *WhosonfirstTable) Schema() string {
 	return whosonfirst_schema
 }
 
-func (t *WhosonfirstTable) InitializeTable(ctx context.Context, db mysql.Database) error {
-
-	return mysql.CreateTableIfNecessary(ctx, db, t)
+func (t *WhosonfirstTable) InitializeTable(ctx context.Context, db wof_sql.Database) error {
+	return wof_sql.CreateTableIfNecessary(ctx, db, t)
 }
 
-func (t *WhosonfirstTable) IndexRecord(ctx context.Context, db mysql.Database, i interface{}, custom ...interface{}) error {
-	return t.IndexFeature(ctx, db, i.([]byte), custom...)
+func (t *WhosonfirstTable) IndexRecord(ctx context.Context, db wof_sql.Database, i interface{}, custom ...interface{}) error {
+
+	conn, err := db.Conn()
+
+	if err != nil {
+		return fmt.Errorf("Failed to establish database connection, %w", err)
+	}
+
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
+	if err != nil {
+		return fmt.Errorf("Failed to create transaction, %w", err)
+	}
+
+	err = t.IndexFeature(ctx, tx, i.([]byte), custom...)
+
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("Failed to index %s table, %w", t.Name(), err)
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return fmt.Errorf("Failed to commit transaction, %w", err)
+	}
+
+	return nil
 }
 
-func (t *WhosonfirstTable) IndexFeature(ctx context.Context, db mysql.Database, body []byte, custom ...interface{}) error {
+func (t *WhosonfirstTable) IndexFeature(ctx context.Context, tx *sql.Tx, body []byte, custom ...interface{}) error {
 
 	id, err := properties.Id(body)
 
@@ -109,19 +135,13 @@ func (t *WhosonfirstTable) IndexFeature(ctx context.Context, db mysql.Database, 
 
 	lastmod := properties.LastModified(body)
 
-	conn, err := db.Conn()
-
-	if err != nil {
-		return fmt.Errorf("Failed to establish database connection,%w", err)
-	}
-
-	sql := fmt.Sprintf(`REPLACE INTO %s (
+	q := fmt.Sprintf(`REPLACE INTO %s (
 		geometry, centroid, id, properties, lastmodified
 	) VALUES (
 		ST_GeomFromText('%s'), ST_GeomFromText('%s'), ?, ?, ?
 	)`, WHOSONFIRST_TABLE, wkt_geom, wkt_centroid)
 
-	_, err = conn.ExecContext(ctx, sql, id, string(props_json), lastmod)
+	_, err = tx.ExecContext(ctx, q, id, string(props_json), lastmod)
 
 	if err != nil {
 		return fmt.Errorf("Failed to update table, %w", err)

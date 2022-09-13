@@ -2,10 +2,11 @@ package tables
 
 import (
 	"context"
+	"database/sql"
 	_ "embed"
 	"fmt"
+	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-feature/properties"
-	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 )
 
@@ -15,10 +16,10 @@ var geojson_schema string
 const GEOJSON_TABLE string = "geojson"
 
 type GeoJSONTable struct {
-	mysql.Table
+	wof_sql.Table
 }
 
-func NewGeoJSONTableWithDatabase(ctx context.Context, db mysql.Database) (mysql.Table, error) {
+func NewGeoJSONTableWithDatabase(ctx context.Context, db wof_sql.Database) (wof_sql.Table, error) {
 
 	t, err := NewGeoJSONTable(ctx)
 
@@ -35,7 +36,7 @@ func NewGeoJSONTableWithDatabase(ctx context.Context, db mysql.Database) (mysql.
 	return t, nil
 }
 
-func NewGeoJSONTable(ctx context.Context) (mysql.Table, error) {
+func NewGeoJSONTable(ctx context.Context) (wof_sql.Table, error) {
 	t := GeoJSONTable{}
 	return &t, nil
 }
@@ -48,16 +49,41 @@ func (t *GeoJSONTable) Schema() string {
 	return geojson_schema
 }
 
-func (t *GeoJSONTable) InitializeTable(ctx context.Context, db mysql.Database) error {
-
-	return mysql.CreateTableIfNecessary(ctx, db, t)
+func (t *GeoJSONTable) InitializeTable(ctx context.Context, db wof_sql.Database) error {
+	return wof_sql.CreateTableIfNecessary(ctx, db, t)
 }
 
-func (t *GeoJSONTable) IndexRecord(ctx context.Context, db mysql.Database, i interface{}, custom ...interface{}) error {
-	return t.IndexFeature(ctx, db, i.([]byte), custom...)
+func (t *GeoJSONTable) IndexRecord(ctx context.Context, db wof_sql.Database, i interface{}, custom ...interface{}) error {
+
+	conn, err := db.Conn()
+
+	if err != nil {
+		return fmt.Errorf("Failed to establish database connection, %w", err)
+	}
+
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
+	if err != nil {
+		return fmt.Errorf("Failed to create transaction, %w", err)
+	}
+
+	err = t.IndexFeature(ctx, tx, i.([]byte), custom...)
+
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("Failed to index %s table, %w", t.Name(), err)
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return fmt.Errorf("Failed to commit transaction, %w", err)
+	}
+
+	return nil
 }
 
-func (t *GeoJSONTable) IndexFeature(ctx context.Context, db mysql.Database, body []byte, custom ...interface{}) error {
+func (t *GeoJSONTable) IndexFeature(ctx context.Context, tx *sql.Tx, body []byte, custom ...interface{}) error {
 
 	id, err := properties.Id(body)
 
@@ -84,19 +110,13 @@ func (t *GeoJSONTable) IndexFeature(ctx context.Context, db mysql.Database, body
 		}
 	}
 
-	conn, err := db.Conn()
-
-	if err != nil {
-		return fmt.Errorf("Failed to create database connection, %w", err)
-	}
-
-	sql := fmt.Sprintf(`REPLACE INTO %s (
+	q := fmt.Sprintf(`REPLACE INTO %s (
 		id, alt, body, lastmodified
 	) VALUES (
 		?, ?, ?, ?
 	)`, GEOJSON_TABLE)
 
-	_, err = conn.ExecContext(ctx, sql, id, str_alt, string(body), lastmod)
+	_, err = tx.ExecContext(ctx, q, id, str_alt, string(body), lastmod)
 
 	if err != nil {
 		return fmt.Errorf("Failed to update geojson table, %w", err)

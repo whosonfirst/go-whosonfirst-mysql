@@ -1,11 +1,14 @@
 package main
 
 import (
+	_ "github.com/go-sql-driver/mysql"
+)
+
+import (
 	"context"
 	"github.com/sfomuseum/go-flags/flagset"
-	"github.com/whosonfirst/go-whosonfirst-mysql"
-	"github.com/whosonfirst/go-whosonfirst-mysql/database"
-	"github.com/whosonfirst/go-whosonfirst-mysql/prune"
+	"github.com/whosonfirst/go-whosonfirst-database-sql"
+	"github.com/whosonfirst/go-whosonfirst-database-sql/prune"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
 	"log"
 	"os"
@@ -35,7 +38,7 @@ func main() {
 		logger.Fatalf("Failed to set flags from environment variables, %v", err)
 	}
 
-	db, err := database.NewDB(ctx, *database_uri)
+	db, err := sql.NewSQLDB(ctx, *database_uri)
 
 	if err != nil {
 		logger.Fatalf("unable to create database because %v", err)
@@ -43,7 +46,7 @@ func main() {
 
 	defer db.Close()
 
-	to_purge := make([]mysql.Table, 0)
+	to_purge := make([]sql.Table, 0)
 
 	if *purge_geojson || *purge_all {
 

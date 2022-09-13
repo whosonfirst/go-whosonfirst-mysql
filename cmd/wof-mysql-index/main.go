@@ -1,23 +1,22 @@
 package main
 
 import (
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/whosonfirst/go-whosonfirst-iterate-git/v2"
 )
 
 import (
 	"context"
+	"fmt"
 	"github.com/sfomuseum/go-flags/flagset"
+	"github.com/sfomuseum/go-timings"
+	"github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
-	"github.com/whosonfirst/go-whosonfirst-mysql"
-	"github.com/whosonfirst/go-whosonfirst-mysql/database"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
 	"log"
 	"os"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 func main() {
@@ -32,7 +31,7 @@ func main() {
 	index_whosonfirst := fs.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
 	index_all := fs.Bool("all", false, "Index all the tables")
 
-	timings := fs.Bool("timings", false, "Display timings during and after indexing")
+	// timings := fs.Bool("timings", false, "Display timings during and after indexing")
 
 	flagset.Parse(fs)
 
@@ -45,7 +44,13 @@ func main() {
 		logger.Fatalf("Failed to set flags from environment variables, %v", err)
 	}
 
-	db, err := database.NewDB(ctx, *database_uri)
+	monitor, err := timings.NewMonitor(ctx, "counter://PT60S")
+
+	if err != nil {
+		logger.Fatalf("Failed to create timings monitor, %w", err)
+	}
+
+	db, err := sql.NewSQLDB(ctx, *database_uri)
 
 	if err != nil {
 		logger.Fatalf("unable to create database because %v", err)
@@ -53,7 +58,7 @@ func main() {
 
 	defer db.Close()
 
-	to_index := make([]mysql.Table, 0)
+	to_index := make([]sql.Table, 0)
 
 	if *index_geojson || *index_all {
 
@@ -81,9 +86,6 @@ func main() {
 		logger.Fatalf("You forgot to specify which (any) tables to index")
 	}
 
-	table_timings := make(map[string]time.Duration)
-	mu := new(sync.RWMutex)
-
 	iter_cb := func(ctx context.Context, path string, fh io.ReadSeeker, args ...interface{}) error {
 
 		_, uri_args, err := uri.ParseURI(path)
@@ -101,34 +103,13 @@ func main() {
 		db.Lock()
 		defer db.Unlock()
 
-		for _, t := range to_index {
+		err = db.IndexFeature(ctx, to_index, body, uri_args.IsAlternate)
 
-			t1 := time.Now()
-
-			err = t.IndexFeature(ctx, db, body, uri_args.IsAlternate)
-
-			if err != nil {
-				logger.Printf("Failed to index feature (%s) in '%s' table because %s", path, t.Name(), err)
-				return nil
-			}
-
-			t2 := time.Since(t1)
-
-			n := t.Name()
-
-			mu.Lock()
-
-			_, ok := table_timings[n]
-
-			if ok {
-				table_timings[n] += t2
-			} else {
-				table_timings[n] = t2
-			}
-
-			mu.Unlock()
+		if err != nil {
+			return fmt.Errorf("Failed to index %s, %w", path, err)
 		}
 
+		go monitor.Signal(ctx)
 		return nil
 	}
 
@@ -138,44 +119,8 @@ func main() {
 		logger.Fatalf("Failed to create new iterator because: %s", err)
 	}
 
-	done_ch := make(chan bool)
-	t1 := time.Now()
-
-	show_timings := func() {
-
-		t2 := time.Since(t1)
-
-		i := atomic.LoadInt64(&iter.Seen) // please just make this part of go-whosonfirst-index
-
-		mu.RLock()
-		defer mu.RUnlock()
-
-		for t, d := range table_timings {
-			logger.Printf("Time to index %s (%d) : %v", t, i, d)
-		}
-
-		logger.Printf("Time to index all (%d) : %v", i, t2)
-	}
-
-	if *timings {
-
-		go func() {
-
-			for {
-
-				select {
-				case <-done_ch:
-					return
-				case <-time.After(1 * time.Minute):
-					show_timings()
-				}
-			}
-		}()
-
-		defer func() {
-			done_ch <- true
-		}()
-	}
+	monitor.Start(ctx, os.Stdout)
+	defer monitor.Stop(ctx)
 
 	to_iterate := fs.Args()
 	err = iter.IterateURIs(ctx, to_iterate...)

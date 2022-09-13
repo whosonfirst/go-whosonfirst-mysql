@@ -130,6 +130,12 @@ github.com/sfomuseum/go-edtf
 # github.com/sfomuseum/go-flags v0.7.0
 ## explicit; go 1.12
 github.com/sfomuseum/go-flags/flagset
+# github.com/sfomuseum/go-timings v1.0.0
+## explicit; go 1.16
+github.com/sfomuseum/go-timings
+# github.com/sfomuseum/iso8601duration v1.0.0
+## explicit; go 1.18
+github.com/sfomuseum/iso8601duration
 # github.com/tidwall/gjson v1.14.3
 ## explicit; go 1.12
 github.com/tidwall/gjson
@@ -145,6 +151,10 @@ github.com/whosonfirst/go-ioutil
 # github.com/whosonfirst/go-whosonfirst-crawl v0.2.1
 ## explicit; go 1.12
 github.com/whosonfirst/go-whosonfirst-crawl
+# github.com/whosonfirst/go-whosonfirst-database-sql v0.0.0-20220913181015-36ff12a48251
+## explicit; go 1.19
+github.com/whosonfirst/go-whosonfirst-database-sql
+github.com/whosonfirst/go-whosonfirst-database-sql/prune
 # github.com/whosonfirst/go-whosonfirst-feature v0.0.24
 ## explicit; go 1.16
 github.com/whosonfirst/go-whosonfirst-feature/geometry

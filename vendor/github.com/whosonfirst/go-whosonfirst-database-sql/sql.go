@@ -1,4 +1,4 @@
-package mysql
+package sql
 
 import (
 	"context"
@@ -9,15 +9,17 @@ import (
 type Database interface {
 	Conn() (*sql.DB, error)
 	DSN() string
-	Close() error
-	IndexFeature(context.Context, []Table, []byte, ...interface{}) error
+	Lock()
+	Unlock() 
+	Close() error 
+	IndexFeature(context.Context, []Table, []byte, ...interface{}) error	
 }
 
 type Table interface {
 	Name() string
 	Schema() string
 	InitializeTable(context.Context, Database) error
-	IndexFeature(context.Context, Database, []byte, ...interface{}) error
+	IndexFeature(context.Context, *sql.Tx, []byte, ...interface{}) error
 }
 
 var lookup_table map[string]bool
