@@ -123,6 +123,10 @@ wr_uri := "mysql:///?dsn={USER}:{PASSWORD}@/{DATABASE}&geojson=true&whosonfirst=
 wr, _ := writer.NewWriter(ctx, wr_uri)
 ```
 
+## Docker
+
+* https://dev.mysql.com/doc/mysql-installation-excerpt/8.0/en/docker-mysql-getting-started.html
+
 ## See also:
 
 * https://github.com/whosonfirst/go-whosonfirst-database-sql

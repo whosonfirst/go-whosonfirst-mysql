@@ -7,7 +7,7 @@ require (
 	github.com/paulmach/orb v0.7.1
 	github.com/sfomuseum/go-flags v0.9.0
 	github.com/tidwall/gjson v1.14.3
-	github.com/whosonfirst/go-whosonfirst-database-sql v0.0.0-20220913191114-1a5af9e3d177
+	github.com/whosonfirst/go-whosonfirst-database-sql v0.0.1
 	github.com/whosonfirst/go-whosonfirst-feature v0.0.24
 	github.com/whosonfirst/go-whosonfirst-iterate-git/v2 v2.1.1
 	github.com/whosonfirst/go-whosonfirst-uri v1.2.0
