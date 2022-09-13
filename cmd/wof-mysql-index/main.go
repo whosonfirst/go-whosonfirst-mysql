@@ -9,7 +9,7 @@ import (
 	"context"
 	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/whosonfirst/go-whosonfirst-database-sql"
-	"github.com/whosonfirst/go-whosonfirst-database-sql/index"	
+	"github.com/whosonfirst/go-whosonfirst-database-sql/index"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
 	"log"
 	"os"
@@ -19,7 +19,7 @@ func main() {
 
 	fs := flagset.NewFlagSet("index")
 
-	database_uri := fs.String("database-uri", "", "")
+	database_uri := fs.String("database-uri", "", "A URI in the form of 'mysql://?dsn={DSN}'")
 
 	iterator_uri := fs.String("iterator-uri", "repo://", "A valid whosonfirst/go-whosonfirst-iterate/v2 URI")
 
@@ -27,8 +27,8 @@ func main() {
 	index_whosonfirst := fs.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
 	index_all := fs.Bool("all", false, "Index all the tables")
 
-	timings := fs.Bool("timings", false, "Enable timings")
-	
+	timings := fs.Bool("timings", false, "Enable timings during indexing")
+
 	flagset.Parse(fs)
 
 	ctx := context.Background()
@@ -78,15 +78,15 @@ func main() {
 
 	index_opts := &index.IndexTablesOptions{
 		Database: db,
-		Tables: to_index,
-		Logger: logger,
-		Timings: *timings,
+		Tables:   to_index,
+		Logger:   logger,
+		Timings:  *timings,
 	}
 
 	to_iterate := fs.Args()
-	
+
 	err = index.IndexTables(ctx, index_opts, *iterator_uri, to_iterate...)
-	
+
 	if err != nil {
 		logger.Fatalf("Failed to index paths in %s mode because: %s", *iterator_uri, err)
 	}

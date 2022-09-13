@@ -1,77 +1,10 @@
 # go-whosonfirst-mysql
 
-Go package for working with Who's On First documents and MySQL databases.
+Go package for working with Who's On First documents and MySQL databases and implementing the `whosonfirst/go-whosonfirst-database-sql` interfaces.
 
-## A few things before we get started
+## Documentation
 
-1. This package assumes you are running a version of [MySQL](https://dev.mysql.com/doc/refman/5.7/en/spatial-analysis-functions.html) (or [MariaDB](https://mariadb.com/kb/en/library/geographic-geometric-features/)) with spatial extensions, so version 5.7 or higher.
-2. This package assumes Who's On First documents and is not yet able to index arbitrary GeoJSON documents.
-3. This package shares the same basic model as the [go-whosonfirst-sqlite-*](https://github.com/whosonfirst?utf8=%E2%9C%93&q=go-whosonfirst-sqlite&type=&language=) packages. They should be reconciled. Today, they are not.
-4. This is not an abstract package for working with databases and tables that aren't Who's On First specific, the way [go-whosonfirst-sqlite](https://github.com/whosonfirst/go-whosonfirst-sqlite) is. It probably _should_ be but that seems like something that will happen as a result of doing #3 (above). 
-
-## Important
-
-In May 2019 backwards incompatible changes were introduced in both the MySQL schema and the Go interfaces (discussed below) in order to support indexing "alternate" geometries in the `geojson` table. The "last known good" version of `go-whosonfirst-mysql` before these changes were introduced has been tagged as [0.1.0](https://github.com/whosonfirst/go-whosonfirst-mysql/releases/tag/0.1.0).
-
-If you already have a MySQL database that you want to update you will need to apply the following changes:
-
-```
-ALTER TABLE geojson ADD alt VARCHAR(255) NOT NULL;
-CREATE UNIQUE INDEX `id_alt` ON geojson (`id`, `alt`);
-DROP INDEX `PRIMARY` ON geojson;
-```
-
-The other change to be introduced is the addition of optional but meaningful positional arguments to the `IndexRecord` and `IndexFeature` methods. Specifically if the list of optional arguments is greater or equal to one the first argument is expected to be a `go-whosonfirst-uri.AltGeom` struct (unless it is `nil`). This means the code ends up looking like this:
-
-```
-func (t *GeoJSONTable) IndexFeature(db mysql.Database, f geojson.Feature, custom ...interface{}) error {
-
-	var alt *uri.AltGeom
-
-	if len(custom) >= 1 {
-		alt = custom[0].(*uri.AltGeom)
-	}
-
-	...
-}
-```
-
-I _do not_ love this. It may change again. I am not sure yet but in the interest of "getting things done" we will live it for now.
-
-## Interfaces
-
-### Database
-
-```
-type Database interface {
-     Conn() (*sql.DB, error)
-     DSN() string
-     Close() error
-}
-```
-
-### Table
-
-```
-type Table interface {
-     Name() string
-     Schema() string
-     InitializeTable(Database) error
-     IndexRecord(Database, interface{}, ...interface{}) error
-}
-```
-
-It is left up to people implementing the `Table` interface to figure out what to do with the second value passed to the `IndexRecord` method. For example:
-
-```
-func (t *WhosonfirstTable) IndexRecord(db mysql.Database, i interface{}, custom ...interface{}) error {
-	return t.IndexFeature(db, i.(geojson.Feature, custom...))
-}
-
-func (t *WhosonfirstTable) IndexFeature(db mysql.Database, f geojson.Feature, custom ...interface{}) error {
-	// code to index geojson.Feature here - see notes above wrt/ positional "custom" arguments
-}
-```
+Documentation is incomplete at this time.
 
 ## Tables
 
@@ -138,85 +71,64 @@ Sure. You just need to write a per-table package that implements the `Table` int
 ### wof-mysql-index 
 
 ```
-./bin/wof-mysql-index -h
-Usage of ./bin/wof-mysql-index:
+$> ./bin/wof-mysql-index -h
   -all
-	Index all the tables
-  -config string
-    	  Read some or all flags from an ini-style config file. Values in the config file take precedence over command line flags.
-  -dsn string
-       A valid go-sql-driver DSN string, for example '{USER}:{PASSWORD}@/{DATABASE}'
+    	Index all the tables
+  -database-uri string
+    	A URI in the form of 'mysql://?dsn={DSN}'
   -geojson
-	Index the 'geojson' tables
-  -mode string
-    	The mode to use importing data. Valid modes are: directory,feature,feature-collection,files,geojson-ls,meta,path,repo,sqlite. (default "repo")
-  -section string
-    	   A valid ini-style config file section. (default "wof-mysql")
+    	Index the 'geojson' table
+  -iterator-uri string
+    	A valid whosonfirst/go-whosonfirst-iterate/v2 URI (default "repo://")
   -timings
-	Display timings during and after indexing
+    	Enable timings during indexing
   -whosonfirst
-	Index the 'whosonfirst' tables
+    	Index the 'whosonfirst' table
 ```
 
 For example:
 
 ```
-./bin/wof-mysql-index -dsn '{USER}:{PASSWORD}@/{DATABASE}' /usr/local/data/whosonfirst-data/
-```
-
-### Config files
-
-You can read (or override) command line flags from a config file, by passing the `-config` flag with the path to a valid ini-style config file. For example, assuming a config file like this:
-
-```
-[wof-mysql]
-dsn={USER}:{PASS}@/{DATABASE}
-all
-timings
-```
-
-Or:
-
-```
-[wof-mysql]
-dsn={USER}:{PASS}@tcp({HOST})/{DATABASE}
-all
-timings
-```
-
-See the kind of weird `@tcp(...)` syntax? Yes, that.
-
-You might invoke it like this:
-
-```
-./bin/wof-mysql-index -config ./test.cfg /usr/local/data/whosonfirst-data-*
-13:47:57.021711 [wof-mysql-index] STATUS Reset all flag from config file
-13:47:57.021840 [wof-mysql-index] STATUS Reset dsn flag from config file
-13:47:57.021846 [wof-mysql-index] STATUS Reset timings flag from config file
-13:48:57.037310 [wof-mysql-index] STATUS time to index geojson (3155) : 16.979713633s
-13:48:57.037329 [wof-mysql-index] STATUS time to index whosonfirst (3155) : 29.342492075s
-13:48:57.037334 [wof-mysql-index] STATUS time to index all (3155) : 1m0.013715096s
-... and so on
+./bin/wof-mysql-index \
+	-all \
+	-database-uri 'mysql://?dsn={USER}:{PASSWORD}@/{DATABASE}' \
+	/usr/local/data/whosonfirst-data/
 ```
 
 If you are indexing large WOF records (like countries) you should make sure to append the `?maxAllowedPacket=0` query string to your DSN. Per [the documentation](https://github.com/go-sql-driver/mysql#maxallowedpacket) this will "automatically fetch the max_allowed_packet variable from server on every connection". Or you could pass it a value larger than the default (in `go-mysql`) 4MB. You may also need to set the `max_allowed_packets` setting your MySQL daemon config file. Check [the documentation](https://dev.mysql.com/doc/refman/8.0/en/packet-too-large.html) for details.
 
 ### Environment variables
 
-_Unless_ you are passing the `-config` flag you can set (or override) command line flags with environment variables. Environment variable are expected to:
+You can set (or override) command line flags with environment variables. Environment variable are expected to:
 
 * Be upper-cased
 * Replace all instances of `-` with `_`
 * Be prefixed with `WOF_MYSQL`
 
-For example the `-dsn` flag would be overridden by the `WOF_MYSQL_DSN` environment variable.
+For example the `-database-uri` flag would be overridden by the `WOF_DATABASE_URI` environment variable.
+
+## Writers
+
+The `writer` package implements the [whosonfirst/go-writer/v2](https://github.com/whosonfirst/go-writer) interfaces. For example:
+
+```
+import (
+       "github.com/whosonfirst/go-writer/v2"
+       _ "github.com/whosonfirst/go-whosonfirst-mysql/writer"
+)
+
+ctx := context.Background()
+
+wr_uri := "mysql:///?dsn={USER}:{PASSWORD}@/{DATABASE}&geojson=true&whosonfirst=true"
+wr, _ := writer.NewWriter(ctx, wr_uri)
+```
 
 ## See also:
 
+* https://github.com/whosonfirst/go-whosonfirst-database-sql
 * https://github.com/go-sql-driver/mysql#dsn-data-source-name
-* https://dev.mysql.com/doc/refman/5.7/en/spatial-analysis-functions.html
-* https://github.com/whosonfirst/go-whosonfirst-sqlite
 
+* https://dev.mysql.com/doc/refman/5.7/en/spatial-analysis-functions.html
 * https://dev.mysql.com/doc/refman/8.0/en/json-functions.html
 * https://www.percona.com/blog/2016/03/07/json-document-fast-lookup-with-mysql-5-7/
 * https://archive.fosdem.org/2016/schedule/event/mysql57_json/attachments/slides/1291/export/events/attachments/mysql57_json/slides/1291/MySQL_57_JSON.pdf
