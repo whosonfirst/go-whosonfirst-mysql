@@ -1,12 +1,17 @@
 package tables
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-feature/properties"
 	"github.com/whosonfirst/go-whosonfirst-mysql"
 	"github.com/whosonfirst/go-whosonfirst-uri"
-	_ "log"
 )
+
+//go:embed geojson.schema
+var geojson_schema string
+
+const GEOJSON_TABLE string = "geojson"
 
 type GeoJSONTable struct {
 	mysql.Table
@@ -31,36 +36,16 @@ func NewGeoJSONTableWithDatabase(db mysql.Database) (mysql.Table, error) {
 }
 
 func NewGeoJSONTable() (mysql.Table, error) {
-
-	t := GeoJSONTable{
-		name: "geojson",
-	}
-
+	t := GeoJSONTable{}
 	return &t, nil
 }
 
 func (t *GeoJSONTable) Name() string {
-	return t.name
+	return GEOJSON_TABLE
 }
 
-/*
-ALTER TABLE geojson ADD alt VARCHAR(255) NOT NULL;
-CREATE UNIQUE INDEX id_alt ON geojson (`id`, `alt`);
-DROP INDEX `PRIMARY` ON geojson;
-*/
-
 func (t *GeoJSONTable) Schema() string {
-
-	sql := `CREATE TABLE IF NOT EXISTS %s (
-		      id BIGINT UNSIGNED,
-		      alt VARCHAR(255) NOT NULL,
-		      body LONGBLOB NOT NULL,
-		      lastmodified INT NOT NULL,
-		      UNIQUE KEY id_alt (id, alt),
-		      KEY lastmodified (lastmodified)
-	      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
-
-	return fmt.Sprintf(sql, t.Name())
+	return geojson_schema
 }
 
 func (t *GeoJSONTable) InitializeTable(db mysql.Database) error {
@@ -102,7 +87,7 @@ func (t *GeoJSONTable) IndexFeature(db mysql.Database, body []byte, custom ...in
 		id, alt, body, lastmodified
 	) VALUES (
 		?, ?, ?, ?
-	)`, t.Name())
+	)`, GEOJSON_TABLE)
 
 	stmt, err := tx.Prepare(sql)
 
