@@ -36,7 +36,7 @@ func NewDBWithDSN(ctx context.Context, dsn string) (*MySQLDatabase, error) {
 	conn, err := sql.Open("mysql", dsn)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to open database, %w", err)
 	}
 
 	mu := new(sync.Mutex)
@@ -68,4 +68,38 @@ func (db *MySQLDatabase) DSN() string {
 
 func (db *MySQLDatabase) Close() error {
 	return db.conn.Close()
+}
+
+func (db *MySQLDatabase) IndexFeature(ctx context.Context, tables []mysql.Table, body []byte, args ...interface{}) error {
+
+	conn, err := db.Conn()
+
+	if err != nil {
+		return fmt.Errorf("Failed to establish database connection, %w", err)
+	}
+
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	
+	if err != nil {
+		return fmt.Errorf("Failed to create transaction, %w", err)
+	}
+
+	for _, t := range table {
+
+
+		err := t.IndexFeature(ctx, tx, body, args...)
+
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("Failed to index %s table, %w", t.Name(), err)
+		}
+	}
+	
+	err = tx.Commit()
+
+	if err != nil {
+		return fmt.Errorf("Failed to commit transaction, %w", err)
+	}
+
+	return nil
 }

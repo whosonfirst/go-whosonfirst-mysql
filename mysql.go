@@ -10,6 +10,7 @@ type Database interface {
 	Conn() (*sql.DB, error)
 	DSN() string
 	Close() error
+	IndexFeature(context.Context, []Table, []byte, ...interface{}) error
 }
 
 type Table interface {
