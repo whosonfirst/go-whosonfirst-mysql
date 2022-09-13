@@ -7,14 +7,10 @@ import (
 
 import (
 	"context"
-	"fmt"
 	"github.com/sfomuseum/go-flags/flagset"
-	"github.com/sfomuseum/go-timings"
 	"github.com/whosonfirst/go-whosonfirst-database-sql"
-	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
+	"github.com/whosonfirst/go-whosonfirst-database-sql/index"	
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
-	"github.com/whosonfirst/go-whosonfirst-uri"
-	"io"
 	"log"
 	"os"
 )
@@ -31,6 +27,8 @@ func main() {
 	index_whosonfirst := fs.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
 	index_all := fs.Bool("all", false, "Index all the tables")
 
+	timings := fs.Bool("timings", false, "Enable timings")
+	
 	flagset.Parse(fs)
 
 	ctx := context.Background()
@@ -40,12 +38,6 @@ func main() {
 
 	if err != nil {
 		logger.Fatalf("Failed to set flags from environment variables, %v", err)
-	}
-
-	monitor, err := timings.NewMonitor(ctx, "counter://PT60S")
-
-	if err != nil {
-		logger.Fatalf("Failed to create timings monitor, %w", err)
 	}
 
 	db, err := sql.NewSQLDB(ctx, *database_uri)
@@ -84,51 +76,17 @@ func main() {
 		logger.Fatalf("You forgot to specify which (any) tables to index")
 	}
 
-	iter_cb := func(ctx context.Context, path string, fh io.ReadSeeker, args ...interface{}) error {
-
-		_, uri_args, err := uri.ParseURI(path)
-
-		if err != nil {
-			return err
-		}
-
-		body, err := io.ReadAll(fh)
-
-		if err != nil {
-			return err
-		}
-
-		db.Lock()
-		defer db.Unlock()
-
-		var alt *uri.AltGeom
-
-		if uri_args.IsAlternate {
-			alt = uri_args.AltGeom
-		}
-
-		err = db.IndexFeature(ctx, to_index, body, alt)
-
-		if err != nil {
-			return fmt.Errorf("Failed to index %s, %w", path, err)
-		}
-
-		go monitor.Signal(ctx)
-		return nil
+	index_opts := &index.IndexTablesOptions{
+		Database: db,
+		Tables: to_index,
+		Logger: logger,
+		Timings: *timings,
 	}
-
-	iter, err := iterator.NewIterator(ctx, *iterator_uri, iter_cb)
-
-	if err != nil {
-		logger.Fatalf("Failed to create new iterator because: %s", err)
-	}
-
-	monitor.Start(ctx, os.Stdout)
-	defer monitor.Stop(ctx)
 
 	to_iterate := fs.Args()
-	err = iter.IterateURIs(ctx, to_iterate...)
-
+	
+	err = index.IndexTables(ctx, index_opts, *iterator_uri, to_iterate...)
+	
 	if err != nil {
 		logger.Fatalf("Failed to index paths in %s mode because: %s", *iterator_uri, err)
 	}

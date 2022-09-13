@@ -24,7 +24,7 @@ func NewSQLDB(ctx context.Context, uri string) (Database, error) {
 	}
 
 	driver := u.Scheme
-	
+
 	q := u.Query()
 	dsn := q.Get("dsn")
 

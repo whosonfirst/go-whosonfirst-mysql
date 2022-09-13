@@ -10,9 +10,9 @@ type Database interface {
 	Conn() (*sql.DB, error)
 	DSN() string
 	Lock()
-	Unlock() 
-	Close() error 
-	IndexFeature(context.Context, []Table, []byte, ...interface{}) error	
+	Unlock()
+	Close() error
+	IndexFeature(context.Context, []Table, []byte, ...interface{}) error
 }
 
 type Table interface {

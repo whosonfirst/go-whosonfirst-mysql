@@ -3,8 +3,8 @@ package prune
 import (
 	"context"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
 	"github.com/whosonfirst/go-whosonfirst-database-sql"
+	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
 )
