@@ -31,8 +31,6 @@ func main() {
 	index_whosonfirst := fs.Bool("whosonfirst", false, "Index the 'whosonfirst' tables")
 	index_all := fs.Bool("all", false, "Index all the tables")
 
-	// timings := fs.Bool("timings", false, "Display timings during and after indexing")
-
 	flagset.Parse(fs)
 
 	ctx := context.Background()
@@ -103,7 +101,13 @@ func main() {
 		db.Lock()
 		defer db.Unlock()
 
-		err = db.IndexFeature(ctx, to_index, body, uri_args.IsAlternate)
+		var alt *uri.AltGeom
+
+		if uri_args.IsAlternate {
+			alt = uri_args.AltGeom
+		}
+		
+		err = db.IndexFeature(ctx, to_index, body, alt)
 
 		if err != nil {
 			return fmt.Errorf("Failed to index %s, %w", path, err)

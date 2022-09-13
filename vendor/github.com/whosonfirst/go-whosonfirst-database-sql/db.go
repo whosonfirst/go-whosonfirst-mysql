@@ -23,7 +23,7 @@ func NewSQLDB(ctx context.Context, uri string) (Database, error) {
 		return nil, fmt.Errorf("Failed to parse URI, %w", err)
 	}
 
-	driver := u.Host
+	driver := u.Scheme
 	
 	q := u.Query()
 	dsn := q.Get("dsn")
