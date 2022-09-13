@@ -45,7 +45,7 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 
 	if q.Get("geojson") != "" {
 
-		t, err := tables.NewGeoJSONTableWithDatabase(db)
+		t, err := tables.NewGeoJSONTableWithDatabase(ctx, db)
 
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create GeoJSON table, %w", err)
@@ -56,7 +56,7 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 
 	if q.Get("geojson") != "" {
 
-		t, err := tables.NewWhosonfirstTableWithDatabase(db)
+		t, err := tables.NewWhosonfirstTableWithDatabase(ctx, db)
 
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create Whosonfirst table, %w", err)
@@ -86,7 +86,7 @@ func (wr *MySQLWriter) Write(ctx context.Context, path string, r io.ReadSeeker) 
 
 	for _, t := range wr.tables {
 
-		err := t.IndexFeature(wr.db, body)
+		err := t.IndexFeature(ctx, wr.db, body)
 
 		if err != nil {
 			return 0, fmt.Errorf("Failed to index %s table, %w", t.Name(), err)

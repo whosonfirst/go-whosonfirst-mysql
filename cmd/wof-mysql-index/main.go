@@ -57,7 +57,7 @@ func main() {
 
 	if *index_geojson || *index_all {
 
-		tbl, err := tables.NewGeoJSONTableWithDatabase(db)
+		tbl, err := tables.NewGeoJSONTableWithDatabase(ctx, db)
 
 		if err != nil {
 			logger.Fatalf("failed to create 'geojson' table because %s", err)
@@ -68,7 +68,7 @@ func main() {
 
 	if *index_whosonfirst || *index_all {
 
-		tbl, err := tables.NewWhosonfirstTableWithDatabase(db)
+		tbl, err := tables.NewWhosonfirstTableWithDatabase(ctx, db)
 
 		if err != nil {
 			logger.Fatalf("failed to create 'whosonfirst' table because %s", err)
@@ -105,7 +105,7 @@ func main() {
 
 			t1 := time.Now()
 
-			err = t.IndexFeature(db, body, uri_args.IsAlternate)
+			err = t.IndexFeature(ctx, db, body, uri_args.IsAlternate)
 
 			if err != nil {
 				logger.Printf("Failed to index feature (%s) in '%s' table because %s", path, t.Name(), err)

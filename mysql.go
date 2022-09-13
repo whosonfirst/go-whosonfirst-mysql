@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 )
@@ -14,8 +15,8 @@ type Database interface {
 type Table interface {
 	Name() string
 	Schema() string
-	InitializeTable(Database) error
-	IndexFeature(Database, []byte, ...interface{}) error
+	InitializeTable(context.Context, Database) error
+	IndexFeature(context.Context, Database, []byte, ...interface{}) error
 }
 
 var lookup_table map[string]bool
@@ -24,7 +25,7 @@ func init() {
 	lookup_table = make(map[string]bool)
 }
 
-func HasTable(db Database, table string) (bool, error) {
+func HasTable(ctx context.Context, db Database, table string) (bool, error) {
 
 	dsn := db.DSN()
 
@@ -39,7 +40,7 @@ func HasTable(db Database, table string) (bool, error) {
 	conn, err := db.Conn()
 
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("Failed to establish database connection, %w", err)
 	}
 
 	// Would that the following work in Go... because it totally works
@@ -67,10 +68,10 @@ func HasTable(db Database, table string) (bool, error) {
 	has_table = false
 
 	query := "SHOW TABLES"
-	rows, err := conn.Query(query)
+	rows, err := conn.QueryContext(ctx, query)
 
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("Failed to determine table names, %w", err)
 	}
 
 	defer rows.Close()
@@ -81,7 +82,7 @@ func HasTable(db Database, table string) (bool, error) {
 		err := rows.Scan(&name)
 
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("Failed to scan table name, %w", err)
 		}
 
 		if name == table {
@@ -95,7 +96,7 @@ func HasTable(db Database, table string) (bool, error) {
 	return has_table, nil
 }
 
-func CreateTableIfNecessary(db Database, t Table) error {
+func CreateTableIfNecessary(ctx context.Context, db Database, t Table) error {
 
 	create := false
 
@@ -103,7 +104,7 @@ func CreateTableIfNecessary(db Database, t Table) error {
 		create = true
 	} else {
 
-		has_table, err := HasTable(db, t.Name())
+		has_table, err := HasTable(ctx, db, t.Name())
 
 		if err != nil {
 			return err
@@ -124,7 +125,7 @@ func CreateTableIfNecessary(db Database, t Table) error {
 			return err
 		}
 
-		_, err = conn.Exec(sql)
+		_, err = conn.ExecContext(ctx, sql)
 
 		if err != nil {
 			return err

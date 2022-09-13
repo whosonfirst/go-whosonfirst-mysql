@@ -47,7 +47,7 @@ func main() {
 
 	if *purge_geojson || *purge_all {
 
-		tbl, err := tables.NewGeoJSONTable()
+		tbl, err := tables.NewGeoJSONTable(ctx)
 
 		if err != nil {
 			logger.Fatalf("failed to create 'geojson' table because %s", err)
@@ -58,7 +58,7 @@ func main() {
 
 	if *purge_whosonfirst || *purge_all {
 
-		tbl, err := tables.NewWhosonfirstTable()
+		tbl, err := tables.NewWhosonfirstTable(ctx)
 
 		if err != nil {
 			logger.Fatalf("failed to create 'whosonfirst' table because %s", err)
