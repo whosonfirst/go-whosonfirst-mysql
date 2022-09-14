@@ -4,96 +4,46 @@ Go package for working with Who's On First documents and MySQL databases and imp
 
 ## Documentation
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/whosonfirst/go-whosonfirst-mysql.svg)](https://pkg.go.dev/github.com/whosonfirst/go-whosonfirst-mysql)
+
 Documentation is incomplete at this time.
-
-## Tables
-
-### geojson
-
-```
-CREATE TABLE IF NOT EXISTS geojson (
-      id BIGINT UNSIGNED,
-      alt VARCHAR(255) NOT NULL,
-      body LONGBLOB NOT NULL,
-      lastmodified INT NOT NULL,
-      UNIQUE KEY id_alt (id, alt),
-      KEY lastmodified (lastmodified)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-```
-
-### whosonfirst
-
-```
-CREATE TABLE IF NOT EXISTS %s (
-      id BIGINT UNSIGNED PRIMARY KEY,
-      properties JSON NOT NULL,
-      geometry GEOMETRY NOT NULL,
-      centroid POINT NOT NULL COMMENT 'This is not necessary a math centroid',
-      lastmodified INT NOT NULL,
-      parent_id BIGINT       GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:parent_id"'))) VIRTUAL,
-      placetype VARCHAR(64)  GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties,'$."wof:placetype"'))) VIRTUAL,
-      is_current TINYINT     GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."mz:is_current"') AND JSON_UNQUOTE(JSON_EXTRACT(properties,'$."mz:is_current"'))) VIRTUAL,
-      is_nullisland TINYINT  GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."mz:is_nullisland"') AND JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_nullisland"'))) VIRTUAL,
-      is_approximate TINYINT GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."mz:is_approximate"') AND JSON_LENGTH(JSON_EXTRACT(properties, '$."mz:is_approximate"'))) VIRTUAL,
-      is_ceased TINYINT      GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."edtf:cessation"') AND JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:cessation"')) != "" AND JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:cessation"')) != "open" AND json_unquote(json_extract(properties,'$."edtf:cessation"')) != "uuuu") VIRTUAL,
-      is_deprecated TINYINT  GENERATED ALWAYS AS (JSON_CONTAINS_PATH(properties, 'one', '$."edtf:deprecated"') AND JSON_UNQUOTE(JSON_EXTRACT(properties,'$."edtf:deprecated"')) != "" AND json_unquote(json_extract(properties,'$."edtf:deprecated"')) != "uuuu") VIRTUAL,
-      is_superseded TINYINT  GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:superseded_by"')) > 0) VIRTUAL,
-      is_superseding TINYINT GENERATED ALWAYS AS (JSON_LENGTH(JSON_EXTRACT(properties, '$."wof:supersedes"')) > 0) VIRTUAL,
-      date_upper DATE	     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties, '$."date:cessation_upper"'))) VIRTUAL,
-      date_lower DATE	     GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(properties, '$."date:inception_lower"'))) VIRTUAL,
-      KEY parent_id (parent_id),
-      KEY placetype (placetype),
-      KEY is_current (is_current),
-      KEY is_nullisland (is_nullisland),
-      KEY is_approximate (is_approximate),
-      KEY is_deprecated (is_deprecated),
-      KEY is_superseded (is_superseded),
-      KEY is_superseding (is_superseding),
-      KEY date_upper (date_upper),
-      KEY date_lower (date_lower),
-      SPATIAL KEY idx_geometry (geometry),
-      SPATIAL KEY idx_centroid (centroid)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
-```
-
-There are a few important things to note about the `whosonfirst` table:
-
-1. It is technically possible to add VIRTUAL centroid along the lines of `centroid POINT GENERATED ALWAYS AS (ST_Centroid(geometry)) VIRTUAL` we don't because MySQL will return the math centroid and well we all know what that means for places like San Francisco (SF) - if you don't it means the [math centroid will be in the Pacific Ocean](https://spelunker.whosonfirst.org/id/85922583/) because technically the Farralon Islands are part of SF - so instead we we compute the centroid in the code (using the go-whosonfirst-geojson-v2 Centroid interface)
-2. It's almost certainly going to be moved in to a different package (once this code base is reconciled with the `go-whosonfirst-sqlite` packages)
-3. It is now a _third_ way to "spatially" store WOF records, along with the [go-whosonfirst-sqlite-features `geometries`](https://github.com/whosonfirst/go-whosonfirst-sqlite-features#geometries) and the [go-whosonfirst-spatialite-geojson geojson](https://github.com/whosonfirst/go-whosonfirst-spatialite-geojson#geojson) tables. It is entirely possible that this is "just how it is" and there is no value in a single unified table schema but, equally, it seems like it's something to have a think about.
-
-## Custom tables
-
-Sure. You just need to write a per-table package that implements the `Table` interface, described above.
 
 ## Tools
 
-### wof-mysql-index 
+To build binary versions of these tools run the `cli` Makefile target. For example:
+
+```
+$> make cli
+go build -mod vendor -o bin/wof-mysql-index cmd/wof-mysql-index/main.go
+```
+
+### wof-mysql-index
 
 ```
 $> ./bin/wof-mysql-index -h
-  -all
-    	Index all the tables
-  -database-uri string
-    	A URI in the form of 'mysql://?dsn={DSN}'
-  -geojson
-    	Index the 'geojson' table
   -iterator-uri string
-    	A valid whosonfirst/go-whosonfirst-iterate/v2 URI (default "repo://")
-  -timings
-    	Enable timings during indexing
-  -whosonfirst
-    	Index the 'whosonfirst' table
+    	A valid whosonfirst/go-whosonfirst-iterate/v2 URI. (default "repo://")
+  -monitor-uri string
+    	A valid sfomuseum/go-timings URI. (default "counter://PT60S")
+  -writer-uri value
+    	One or more valid whosonfirst/go-writer/v2 URIs, each encoded as a gocloud.dev/runtimevar URI.
 ```
 
-For example:
+For example, assuming a `whosonfirst/go-writer/v2` URI of "mysql://?dsn={USER}:{PASS}@/{DATABASE}":
 
 ```
-./bin/wof-mysql-index \
-	-all \
-	-database-uri 'mysql://?dsn={USER}:{PASSWORD}@/{DATABASE}' \
-	/usr/local/data/whosonfirst-data/
+$> bin/wof-mysql-index \
+   	-writer-uri 'constant://?val=mysql%3A%2F%2F%3Fdsn%3D%7BUSER%7D%3A%7BPASS%7D%40%2F%7BDATABASE%7D'
+	/usr/local/data/whosonfirst-data-admin-ca
 ```
+
+This command will publish (or write) all the records in `whosonfirst-data-admin-ca` to the `{DATABASE}` MySQL database.
+
+The `es-whosonfirst-index` tool is a thin wrapper around the `iterwriter` tool which is provided by the [whosonfirst/go-whosonfirst-iterwriter](https://github.com/whosonfirst/go-whosonfirst-iterwriter) package.
+
+The need to URL-encode `whosonfirst/go-writer/v2` URIs is unfortunate but is tolerated since the use to `gocloud.dev/runtimevar` URIs provides a means to keep secrets and other sensitive values out of command-line arguments (and by extension process lists).
+
+By default both the `geojson` and `whosonfirst` tables (described below) are indexed. To disable this behaviour include the `?geojson=false` or `?whosonfirst-false` parameters in the `whosonfirst/go-writer/v2` URI.
 
 If you are indexing large WOF records (like countries) you should make sure to append the `?maxAllowedPacket=0` query string to your DSN. Per [the documentation](https://github.com/go-sql-driver/mysql#maxallowedpacket) this will "automatically fetch the max_allowed_packet variable from server on every connection". Or you could pass it a value larger than the default (in `go-mysql`) 4MB. You may also need to set the `max_allowed_packets` setting your MySQL daemon config file. Check [the documentation](https://dev.mysql.com/doc/refman/8.0/en/packet-too-large.html) for details.
 
@@ -123,15 +73,38 @@ wr_uri := "mysql:///?dsn={USER}:{PASSWORD}@/{DATABASE}&geojson=true&whosonfirst=
 wr, _ := writer.NewWriter(ctx, wr_uri)
 ```
 
-## Docker
+## Tables
 
-* https://dev.mysql.com/doc/mysql-installation-excerpt/8.0/en/docker-mysql-getting-started.html
+### geojson
+
+The `geojson` table is used to index the body of a Who's On First feature keyed by its unique ID. The complete schema for the table is here:
+
+* [tables/geojson.schema](tables/geojson.schema)
+
+### whosonfirst
+
+The `whosonfirst` table is used to index the body of a Who's On First feature keyed by its unique ID with additional columns and indexes for performing SPR and spatial queries. The complete schema for the table is here:
+
+* [tables/whosonfirst.schema](tables/whosonfirst.schema)
+
+There are a few important things to note about the `whosonfirst` table:
+
+1. It is technically possible to add VIRTUAL centroid along the lines of `centroid POINT GENERATED ALWAYS AS (ST_Centroid(geometry)) VIRTUAL` we don't because MySQL will return the math centroid and well we all know what that means for places like San Francisco (SF) - if you don't it means the [math centroid will be in the Pacific Ocean](https://spelunker.whosonfirst.org/id/85922583/) because technically the Farralon Islands are part of SF - so instead we we compute the centroid in the code (using the go-whosonfirst-geojson-v2 Centroid interface)
+2. It's almost certainly going to be moved in to a different package (once this code base is reconciled with the `go-whosonfirst-sqlite` packages)
+3. It is now a _third_ way to "spatially" store WOF records, along with the [go-whosonfirst-sqlite-features `geometries`](https://github.com/whosonfirst/go-whosonfirst-sqlite-features#geometries) and the [go-whosonfirst-spatialite-geojson geojson](https://github.com/whosonfirst/go-whosonfirst-spatialite-geojson#geojson) tables. It is entirely possible that this is "just how it is" and there is no value in a single unified table schema but, equally, it seems like it's something to have a think about.
+
+## Custom tables
+
+Sure. You just need to write a per-table package that implements the `Table` interface, described above.
 
 ## See also:
 
 * https://github.com/whosonfirst/go-whosonfirst-database-sql
-* https://github.com/go-sql-driver/mysql#dsn-data-source-name
+* https://github.com/whosonfirst/go-whosonfirst-iterate
+* https://github.com/whosonfirst/go-whosonfirst-writer
+* https://github.com/whosonfirst/go-whosonfirst-iterwriter
 
+* https://github.com/go-sql-driver/mysql#dsn-data-source-name
 * https://dev.mysql.com/doc/refman/5.7/en/spatial-analysis-functions.html
 * https://dev.mysql.com/doc/refman/8.0/en/json-functions.html
 * https://www.percona.com/blog/2016/03/07/json-document-fast-lookup-with-mysql-5-7/

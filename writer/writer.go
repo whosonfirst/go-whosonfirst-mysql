@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"net/url"
+	"strconv"
 )
 
 func init() {
@@ -45,9 +46,34 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 		return nil, fmt.Errorf("Failed to create database, %w", err)
 	}
 
-	to_index := make([]wof_sql.Table, 0)
+	index_geojson := true
+	index_whosonfirst := true
 
 	if q.Get("geojson") != "" {
+
+		index, err := strconv.ParseBool(q.Get("geojson"))
+
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse ?geojson= parameter, %w", err)
+		}
+
+		index_geojson = index
+	}
+
+	if q.Get("whosonfirst") != "" {
+
+		index, err := strconv.ParseBool(q.Get("whosonfirst"))
+
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse ?whosonfirst= parameter, %w", err)
+		}
+
+		index_whosonfirst = index
+	}
+
+	to_index := make([]wof_sql.Table, 0)
+
+	if index_geojson {
 
 		t, err := tables.NewGeoJSONTableWithDatabase(ctx, db)
 
@@ -58,7 +84,7 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 		to_index = append(to_index, t)
 	}
 
-	if q.Get("geojson") != "" {
+	if index_whosonfirst {
 
 		t, err := tables.NewWhosonfirstTableWithDatabase(ctx, db)
 
