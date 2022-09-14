@@ -328,7 +328,7 @@ github.com/whosonfirst/go-whosonfirst-iterate-git/v2
 github.com/whosonfirst/go-whosonfirst-iterate/v2/emitter
 github.com/whosonfirst/go-whosonfirst-iterate/v2/filters
 github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator
-# github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.2
+# github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.3
 ## explicit; go 1.19
 github.com/whosonfirst/go-whosonfirst-iterwriter
 github.com/whosonfirst/go-whosonfirst-iterwriter/application/iterwriter

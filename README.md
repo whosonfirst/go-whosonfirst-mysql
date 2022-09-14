@@ -53,9 +53,9 @@ You can set (or override) command line flags with environment variables. Environ
 
 * Be upper-cased
 * Replace all instances of `-` with `_`
-* Be prefixed with `WOF_MYSQL`
+* Be prefixed with `WOF_`
 
-For example the `-database-uri` flag would be overridden by the `WOF_DATABASE_URI` environment variable.
+For example the `-writer-uri` flag would be overridden by the `WOF_WRITER_URI` environment variable.
 
 ## Writers
 
@@ -69,7 +69,7 @@ import (
 
 ctx := context.Background()
 
-wr_uri := "mysql:///?dsn={USER}:{PASSWORD}@/{DATABASE}&geojson=true&whosonfirst=true"
+wr_uri := "mysql:///?dsn={USER}:{PASSWORD}@/{DATABASE}"
 wr, _ := writer.NewWriter(ctx, wr_uri)
 ```
 

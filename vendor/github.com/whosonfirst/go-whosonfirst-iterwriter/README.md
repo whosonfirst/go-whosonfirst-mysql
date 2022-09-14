@@ -1,6 +1,6 @@
 # go-whosonfirst-iterwriter
 
-Go package to dispatch `whosonfirst/go-whosonfirst-iterate/v2` events to `whosonfirst/go-writer/v2` instances.
+Opinionated Go package to dispatch `whosonfirst/go-whosonfirst-iterate/v2` events to `whosonfirst/go-writer/v2` instances.
 
 ## Documentation
 

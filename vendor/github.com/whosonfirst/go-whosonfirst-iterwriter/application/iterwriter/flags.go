@@ -1,9 +1,9 @@
 package iterwriter
 
 import (
+	"flag"
 	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/sfomuseum/go-flags/multi"
-	"flag"
 )
 
 var writer_uris multi.MultiCSVString

@@ -2,8 +2,8 @@ package iterwriter
 
 import (
 	"context"
-	"fmt"
 	"flag"
+	"fmt"
 	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/sfomuseum/go-timings"
 	"github.com/sfomuseum/runtimevar"
@@ -11,8 +11,8 @@ import (
 	"github.com/whosonfirst/go-writer/v2"
 	"log"
 	"os"
-	"time"
 	"strings"
+	"time"
 )
 
 func Run(ctx context.Context, logger *log.Logger) error {
@@ -23,6 +23,12 @@ func Run(ctx context.Context, logger *log.Logger) error {
 func RunWithFlagSet(ctx context.Context, fs *flag.FlagSet, logger *log.Logger) error {
 
 	flagset.Parse(fs)
+
+	err := flagset.SetFlagsFromEnvVars(fs, "WOF")
+
+	if err != nil {
+		return fmt.Errorf("Failed to assign flags from environment variables, %w", err)
+	}
 
 	iterator_paths := fs.Args()
 
