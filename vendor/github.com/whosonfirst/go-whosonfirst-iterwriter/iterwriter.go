@@ -1,14 +1,14 @@
-package writer
+package iterwriter
 
 import (
 	"context"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
-	wof_writer "github.com/whosonfirst/go-writer/v2"
+	"github.com/whosonfirst/go-writer/v2"
 	"io"
 )
 
-func IterateWithWriter(ctx context.Context, wr wof_writer.Writer, iterator_uri string, iterator_paths ...string) error {
+func IterateWithWriter(ctx context.Context, wr writer.Writer, iterator_uri string, iterator_paths ...string) error {
 
 	iter_cb := func(ctx context.Context, path string, r io.ReadSeeker, args ...interface{}) error {
 

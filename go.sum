@@ -120,6 +120,8 @@ github.com/whosonfirst/go-whosonfirst-iterate-git/v2 v2.1.1/go.mod h1:okSGTdAZsn
 github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.0.1/go.mod h1:oGk1jhZiP1Hfe4QVQAMAVCkTTjxlr5/hrzk/xfxWVss=
 github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.2.0 h1:O2aRxiuQkAzp589HyPzlDnr7oR8NTOl5SkmZVmamMsA=
 github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.2.0/go.mod h1:CBLdwdhCVfC5MHbWg8i6i+RGYOB1aZjgPfIrxxZEsSQ=
+github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.1 h1:n23S759dX0NczS5tEeSyz+XKn4Oe02cRwrWf7fgW5zI=
+github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.1/go.mod h1:8a4SULJ+GcvO1dEwxwo9Z1fv6l1NJYaPnYqPooI4NS4=
 github.com/whosonfirst/go-whosonfirst-placetypes v0.3.0/go.mod h1:ez0VFkGFbgT2/z2oi3PIuW6FewsZ2+5glyfDD79XEHk=
 github.com/whosonfirst/go-whosonfirst-sources v0.1.0 h1:JuKLa6KWke22jBfJ1pM9WQHoz1/3pbDv2C+aR+THPPQ=
 github.com/whosonfirst/go-whosonfirst-sources v0.1.0/go.mod h1:EUMHyGzUmqPPxlMmOp+28BFeoBdxxE0HCKRd67lkqGM=

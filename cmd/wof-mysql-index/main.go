@@ -8,7 +8,7 @@ import (
 
 import (
 	"context"
-	"github.com/whosonfirst/go-whosonfirst-iterate/v2/application/iterwriter"
+	"github.com/whosonfirst/go-whosonfirst-iterwriter/application/iterwriter"
 	"log"
 )
 
