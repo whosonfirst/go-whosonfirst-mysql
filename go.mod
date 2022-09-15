@@ -10,9 +10,9 @@ require (
 	github.com/whosonfirst/go-whosonfirst-database-sql v0.0.1
 	github.com/whosonfirst/go-whosonfirst-feature v0.0.24
 	github.com/whosonfirst/go-whosonfirst-iterate-git/v2 v2.1.1
-	github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.3
+	github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.5
 	github.com/whosonfirst/go-whosonfirst-uri v1.2.0
-	github.com/whosonfirst/go-writer/v2 v2.0.0
+	github.com/whosonfirst/go-writer/v2 v2.1.0
 )
 
 require (

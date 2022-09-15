@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	chain "github.com/g8rswimmer/error-chain"
@@ -12,6 +13,7 @@ import (
 type MultiWriter struct {
 	Writer
 	writers []Writer
+	async   bool
 }
 
 // NewMultiWriter returns a Writer instance that will send all writes to each instance in 'writers'.
@@ -25,9 +27,29 @@ func NewMultiWriter(writers ...Writer) Writer {
 	return wr
 }
 
+// NewMultiWriter returns a Writer instance that will send all writes to each instance in 'writers' asynchronously.
+func NewAsyncMultiWriter(writers ...Writer) Writer {
+
+	wr := &MultiWriter{
+		writers: writers,
+		async:   true,
+	}
+
+	return wr
+}
+
 // Write copies the contents of 'fh' to each of the writers contained by 'mw' in the order they
-// were specified.
+// were specified unless 'mw' was created by `NewAsyncMultiWriter`.
 func (mw *MultiWriter) Write(ctx context.Context, key string, fh io.ReadSeeker) (int64, error) {
+
+	if mw.async {
+		return mw.writeAsync(ctx, key, fh)
+	}
+
+	return mw.writeSync(ctx, key, fh)
+}
+
+func (mw *MultiWriter) writeSync(ctx context.Context, key string, fh io.ReadSeeker) (int64, error) {
 
 	errors := make([]error, 0)
 	count := int64(0)
@@ -60,6 +82,65 @@ func (mw *MultiWriter) Write(ctx context.Context, key string, fh io.ReadSeeker) 
 	return count, nil
 }
 
+func (mw *MultiWriter) writeAsync(ctx context.Context, key string, fh io.ReadSeeker) (int64, error) {
+
+	body, err := io.ReadAll(fh)
+
+	if err != nil {
+		return 0, fmt.Errorf("Failed to read body, %w", err)
+	}
+
+	done_ch := make(chan bool)
+	err_ch := make(chan error)
+	count_ch := make(chan int64)
+
+	for _, wr := range mw.writers {
+
+		go func(ctx context.Context, wr Writer, key string, body []byte) {
+
+			defer func() {
+				done_ch <- true
+			}()
+
+			i, err := wr.Write(ctx, key, bytes.NewReader(body))
+
+			if err != nil {
+				err_ch <- err
+				return
+			}
+
+			count_ch <- i
+
+		}(ctx, wr, key, body)
+	}
+
+	count := int64(0)
+	errors := make([]error, 0)
+
+	remaining := len(mw.writers)
+
+	for remaining > 0 {
+		select {
+		case <-done_ch:
+			remaining -= 1
+		case err := <-err_ch:
+			errors = append(errors, err)
+		case i := <-count_ch:
+			count += i
+		}
+	}
+
+	if len(errors) > 0 {
+
+		err := fmt.Errorf("One or more Write operations failed")
+		err = errorChain(err, errors...)
+
+		return count, err
+	}
+
+	return count, nil
+}
+
 // WriteURI returns an empty string. Because 'mw' has multiple underlying `Writer` instances
 // each of which specifies their own `WriteURI` methods it's either a choice of returning a
 // concatenated string (with all the values) or an empty string. The decision was made to opt
@@ -69,8 +150,17 @@ func (mw *MultiWriter) WriterURI(ctx context.Context, key string) string {
 }
 
 // Flushes publishes any outstanding data for each of the underlying `Writer` instances (in the order they were specified
-// to the 'mw' instance).
+// to the 'mw' instance) unless 'mw' was created by `NewAsyncMultiWriter`.
 func (mw *MultiWriter) Flush(ctx context.Context) error {
+
+	if mw.async {
+		return mw.flushAsync(ctx)
+	}
+
+	return mw.flushSync(ctx)
+}
+
+func (mw *MultiWriter) flushSync(ctx context.Context) error {
 
 	errors := make([]error, 0)
 
@@ -94,9 +184,62 @@ func (mw *MultiWriter) Flush(ctx context.Context) error {
 	return nil
 }
 
+func (mw *MultiWriter) flushAsync(ctx context.Context) error {
+
+	done_ch := make(chan bool)
+	err_ch := make(chan error)
+
+	for _, wr := range mw.writers {
+
+		go func(ctx context.Context, wr Writer) {
+
+			err := wr.Flush(ctx)
+
+			if err != nil {
+				err_ch <- err
+			}
+
+			done_ch <- true
+
+		}(ctx, wr)
+	}
+
+	errors := make([]error, 0)
+
+	remaining := len(mw.writers)
+
+	for remaining > 0 {
+		select {
+		case <-done_ch:
+			remaining -= 1
+		case err := <-err_ch:
+			errors = append(errors, err)
+		}
+	}
+
+	if len(errors) > 0 {
+
+		err := fmt.Errorf("One or more Flush operations failed")
+		err = errorChain(err, errors...)
+
+		return err
+	}
+
+	return nil
+}
+
 // Closes closes each of the underlying `Writer` instances (in the order they were specified
-// to the 'mw' instance).
+// to the 'mw' instance) unless 'mw' was created by `NewAsyncMultiWriter`.
 func (mw *MultiWriter) Close(ctx context.Context) error {
+
+	if mw.async {
+		return mw.closeAsync(ctx)
+	}
+
+	return mw.closeSync(ctx)
+}
+
+func (mw *MultiWriter) closeSync(ctx context.Context) error {
 
 	errors := make([]error, 0)
 
@@ -120,9 +263,61 @@ func (mw *MultiWriter) Close(ctx context.Context) error {
 	return nil
 }
 
+func (mw *MultiWriter) closeAsync(ctx context.Context) error {
+
+	errors := make([]error, 0)
+
+	done_ch := make(chan bool)
+	err_ch := make(chan error)
+
+	for _, wr := range mw.writers {
+
+		go func(ctx context.Context, wr Writer) {
+
+			err := wr.Close(ctx)
+
+			if err != nil {
+				err_ch <- err
+			}
+
+			done_ch <- true
+		}(ctx, wr)
+	}
+
+	remaining := len(mw.writers)
+
+	for remaining > 0 {
+		select {
+		case <-done_ch:
+			remaining -= 1
+		case err := <-err_ch:
+			errors = append(errors, err)
+		}
+	}
+
+	if len(errors) > 0 {
+
+		err := fmt.Errorf("One or more Close operations failed")
+		err = errorChain(err, errors...)
+
+		return err
+	}
+
+	return nil
+}
+
 // SetLogger assign 'logger' to each of the underlying `Writer` instances (in the order they were specified
-// to the 'mw' instance).
+// to the 'mw' instance) unless 'mw' was created by `NewAsyncMultiWriter`.
 func (mw *MultiWriter) SetLogger(ctx context.Context, logger *log.Logger) error {
+
+	if mw.async {
+		return mw.setLoggerAsync(ctx, logger)
+	}
+
+	return mw.setLoggerSync(ctx, logger)
+}
+
+func (mw *MultiWriter) setLoggerSync(ctx context.Context, logger *log.Logger) error {
 
 	errors := make([]error, 0)
 
@@ -131,6 +326,49 @@ func (mw *MultiWriter) SetLogger(ctx context.Context, logger *log.Logger) error 
 		err := wr.SetLogger(ctx, logger)
 
 		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if len(errors) > 0 {
+
+		err := fmt.Errorf("One or more SetLogger operations failed")
+		err = errorChain(err, errors...)
+
+		return err
+	}
+
+	return nil
+}
+
+func (mw *MultiWriter) setLoggerAsync(ctx context.Context, logger *log.Logger) error {
+
+	errors := make([]error, 0)
+
+	done_ch := make(chan bool)
+	err_ch := make(chan error)
+
+	for _, wr := range mw.writers {
+
+		go func(ctx context.Context, wr Writer) {
+
+			err := wr.SetLogger(ctx, logger)
+
+			if err != nil {
+				err_ch <- err
+			}
+
+			done_ch <- true
+		}(ctx, wr)
+	}
+
+	remaining := len(mw.writers)
+
+	for remaining > 0 {
+		select {
+		case <-done_ch:
+			remaining -= 1
+		case err := <-err_ch:
 			errors = append(errors, err)
 		}
 	}
