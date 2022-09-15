@@ -38,7 +38,10 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 
 	q := u.Query()
 
-	db_uri := fmt.Sprintf("mysql://?dsn=%s", q.Get("dsn"))
+	dsn := q.Get("dsn")
+	enc_dsn := url.QueryEscape(dsn)
+
+	db_uri := fmt.Sprintf("mysql://?dsn=%s", enc_dsn)
 
 	db, err := wof_sql.NewSQLDB(ctx, db_uri)
 
