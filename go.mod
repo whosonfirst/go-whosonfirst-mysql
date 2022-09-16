@@ -12,7 +12,7 @@ require (
 	github.com/whosonfirst/go-whosonfirst-iterate-git/v2 v2.1.1
 	github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.5
 	github.com/whosonfirst/go-whosonfirst-uri v1.2.0
-	github.com/whosonfirst/go-writer/v2 v2.1.0
+	github.com/whosonfirst/go-writer/v3 v3.0.0
 )
 
 require (
@@ -64,6 +64,7 @@ require (
 	github.com/whosonfirst/go-whosonfirst-flags v0.4.4 // indirect
 	github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.3.0 // indirect
 	github.com/whosonfirst/go-whosonfirst-sources v0.1.0 // indirect
+	github.com/whosonfirst/go-writer/v2 v2.1.0 // indirect
 	github.com/whosonfirst/walk v0.0.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	go.opencensus.io v0.23.0 // indirect

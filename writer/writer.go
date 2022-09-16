@@ -9,7 +9,7 @@ import (
 	"fmt"
 	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
-	wof_writer "github.com/whosonfirst/go-writer/v2"
+	wof_writer "github.com/whosonfirst/go-writer/v3"
 	"io"
 	"log"
 	"net/url"
