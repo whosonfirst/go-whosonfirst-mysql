@@ -98,7 +98,7 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 		to_index = append(to_index, t)
 	}
 
-	logger := log.Default()
+	logger := log.New(io.Discard, "", 0)
 
 	wr := &MySQLWriter{
 		db:     db,
