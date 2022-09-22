@@ -35,14 +35,14 @@ func init() {
 // package.
 type MysqlSpatialDatabase struct {
 	database.SpatialDatabase
-	Logger            *log.Logger
-	Timer             *timer.Timer
-	mu                *sync.RWMutex
-	db                wof_sql.Database
-	whosonfirst_table wof_sql.Table
-	geojson_table     wof_sql.Table
-	gocache           *gocache.Cache
-	dsn               string
+	Logger        *log.Logger
+	Timer         *timer.Timer
+	mu            *sync.RWMutex
+	db            wof_sql.Database
+	spatial_table wof_sql.Table
+	geojson_table wof_sql.Table
+	gocache       *gocache.Cache
+	dsn           string
 }
 
 // MysqlResults is a struct that implements the `whosonfirst/go-whosonfirst-spr.StandardPlacesResults`
@@ -86,7 +86,7 @@ func NewMysqlSpatialDatabaseWithDatabase(ctx context.Context, uri string, mysql_
 
 	dsn := q.Get("dsn")
 
-	whosonfirst_table, err := tables.NewWhosonfirstTableWithDatabase(ctx, mysql_db)
+	spatial_table, err := tables.NewWhosonfirstTableWithDatabase(ctx, mysql_db)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create rtree table, %w", err)
@@ -113,14 +113,14 @@ func NewMysqlSpatialDatabaseWithDatabase(ctx context.Context, uri string, mysql_
 	t := timer.NewTimer()
 
 	spatial_db := &MysqlSpatialDatabase{
-		Logger:            logger,
-		Timer:             t,
-		db:                mysql_db,
-		whosonfirst_table: whosonfirst_table,
-		geojson_table:     geojson_table,
-		gocache:           gc,
-		dsn:               dsn,
-		mu:                mu,
+		Logger:        logger,
+		Timer:         t,
+		db:            mysql_db,
+		spatial_table: spatial_table,
+		geojson_table: geojson_table,
+		gocache:       gc,
+		dsn:           dsn,
+		mu:            mu,
 	}
 
 	return spatial_db, nil
@@ -135,7 +135,7 @@ func (r *MysqlSpatialDatabase) Disconnect(ctx context.Context) error {
 func (r *MysqlSpatialDatabase) IndexFeature(ctx context.Context, body []byte) error {
 
 	to_index := []wof_sql.Table{
-		r.whosonfirst_table,
+		r.spatial_table,
 		r.geojson_table,
 	}
 
@@ -166,7 +166,7 @@ func (r *MysqlSpatialDatabase) RemoveFeature(ctx context.Context, str_id string)
 	// defer tx.Rollback()
 
 	to_remove := []wof_sql.Table{
-		r.whosonfirst_table,
+		r.spatial_table,
 		r.geojson_table,
 	}
 
@@ -264,7 +264,7 @@ func (r *MysqlSpatialDatabase) PointInPolygonWithChannels(ctx context.Context, r
 	lat := coord.Lat()
 	lon := coord.Lon()
 
-	q := "SELECT id FROM whosonfirst WHERE ST_Contains(geometry, GeomFromText('POINT(? ?)'))"
+	q := fmt.Sprintf("SELECT id FROM %s WHERE ST_Contains(geometry, GeometryFromText('POINT(? ?)'))", r.spatial_table.Name())
 
 	rows, err := conn.QueryContext(ctx, q, lon, lat)
 
