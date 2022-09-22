@@ -2,25 +2,8 @@ package sql
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 )
-
-type Database interface {
-	Conn() (*sql.DB, error)
-	DSN() string
-	Lock()
-	Unlock()
-	Close() error
-	IndexFeature(context.Context, []Table, []byte, ...interface{}) error
-}
-
-type Table interface {
-	Name() string
-	Schema() string
-	InitializeTable(context.Context, Database) error
-	IndexFeature(context.Context, *sql.Tx, []byte, ...interface{}) error
-}
 
 var lookup_table map[string]bool
 

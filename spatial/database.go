@@ -45,6 +45,10 @@ type MysqlSpatialDatabase struct {
 	dsn           string
 }
 
+func SetSpatialTable(db *MysqlSpatialDatabase, t wof_sql.Table){
+     db.spatial_table = t
+}
+
 // MysqlResults is a struct that implements the `whosonfirst/go-whosonfirst-spr.StandardPlacesResults`
 // interface for rows matching a spatial query.
 type MysqlResults struct {

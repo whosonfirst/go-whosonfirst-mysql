@@ -8,7 +8,7 @@ import (
 	"github.com/sfomuseum/go-timings"
 	"github.com/sfomuseum/runtimevar"
 	"github.com/whosonfirst/go-whosonfirst-iterwriter"
-	"github.com/whosonfirst/go-writer/v2"
+	"github.com/whosonfirst/go-writer/v3"
 	"log"
 	"os"
 	"strings"
@@ -57,7 +57,11 @@ func RunWithFlagSet(ctx context.Context, fs *flag.FlagSet, logger *log.Logger) e
 		writers[idx] = wr
 	}
 
-	mw := writer.NewMultiWriter(writers...)
+	mw, err := writer.NewMultiWriter(ctx, writers...)
+
+	if err != nil {
+		return fmt.Errorf("Failed to create multi writer, %w", err)
+	}
 
 	monitor, err := timings.NewMonitor(ctx, monitor_uri)
 
