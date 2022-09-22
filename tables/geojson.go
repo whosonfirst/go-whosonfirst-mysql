@@ -19,9 +19,15 @@ type GeoJSONTable struct {
 	wof_sql.Table
 }
 
-func NewGeoJSONTableWithDatabase(ctx context.Context, db wof_sql.Database) (wof_sql.Table, error) {
+func init(){
+     ctx := context.Background()
+     wof_sql.RegisterTable(ctx, "geojson", NewGeoJSONTable)
+     wof_sql.RegisterTableWithDatabase(ctx, "geojson_db", NewGeoJSONTableWithDatabase)
+}
 
-	t, err := NewGeoJSONTable(ctx)
+func NewGeoJSONTableWithDatabase(ctx context.Context, uri string, db wof_sql.Database) (wof_sql.Table, error) {
+
+	t, err := NewGeoJSONTable(ctx, "geojson://")
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create GeoJSON table, %w", err)
@@ -36,7 +42,7 @@ func NewGeoJSONTableWithDatabase(ctx context.Context, db wof_sql.Database) (wof_
 	return t, nil
 }
 
-func NewGeoJSONTable(ctx context.Context) (wof_sql.Table, error) {
+func NewGeoJSONTable(ctx context.Context, uri string) (wof_sql.Table, error) {
 	t := GeoJSONTable{}
 	return &t, nil
 }

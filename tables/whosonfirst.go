@@ -23,9 +23,15 @@ type WhosonfirstTable struct {
 	wof_sql.Table
 }
 
-func NewWhosonfirstTableWithDatabase(ctx context.Context, db wof_sql.Database) (wof_sql.Table, error) {
+func init(){
+     ctx := context.Background()
+     wof_sql.RegisterTable(ctx, "whosonfirst", NewWhosonfirstTable)
+     wof_sql.RegisterTableWithDatabase(ctx, "whosonfirst_db", NewWhosonfirstTableWithDatabase)
+}
 
-	t, err := NewWhosonfirstTable(ctx)
+func NewWhosonfirstTableWithDatabase(ctx context.Context, uri string, db wof_sql.Database) (wof_sql.Table, error) {
+
+	t, err := NewWhosonfirstTable(ctx, "whosonfirst://")
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new whosonfirst table, %w", err)
@@ -40,7 +46,7 @@ func NewWhosonfirstTableWithDatabase(ctx context.Context, db wof_sql.Database) (
 	return t, nil
 }
 
-func NewWhosonfirstTable(ctx context.Context) (wof_sql.Table, error) {
+func NewWhosonfirstTable(ctx context.Context, uri string) (wof_sql.Table, error) {
 	t := WhosonfirstTable{}
 	return &t, nil
 }
