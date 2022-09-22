@@ -264,7 +264,7 @@ func (r *MysqlSpatialDatabase) PointInPolygonWithChannels(ctx context.Context, r
 	lat := coord.Lat()
 	lon := coord.Lon()
 
-	q := "SELECT id FROM whosonfirst WHERE ST_Contains(geometry, GeomFromText('POINT(? ?)')"
+	q := "SELECT id FROM whosonfirst WHERE ST_Contains(geometry, GeomFromText('POINT(? ?)'))"
 
 	rows, err := conn.QueryContext(ctx, q, lon, lat)
 
