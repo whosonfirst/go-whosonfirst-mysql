@@ -8,12 +8,18 @@ import (
 	"github.com/sfomuseum/go-timings"
 	"github.com/sfomuseum/runtimevar"
 	"github.com/whosonfirst/go-whosonfirst-iterwriter"
-	"github.com/whosonfirst/go-writer/v2"
+	"github.com/whosonfirst/go-writer/v3"
 	"log"
 	"os"
 	"strings"
 	"time"
 )
+
+type RunOptions struct {
+	Logger       *log.Logger
+	FlagSet      *flag.FlagSet
+	CallbackFunc iterwriter.IterwriterCallbackFunc
+}
 
 func Run(ctx context.Context, logger *log.Logger) error {
 	fs := DefaultFlagSet()
@@ -21,6 +27,19 @@ func Run(ctx context.Context, logger *log.Logger) error {
 }
 
 func RunWithFlagSet(ctx context.Context, fs *flag.FlagSet, logger *log.Logger) error {
+
+	opts := &RunOptions{
+		Logger:       logger,
+		FlagSet:      fs,
+		CallbackFunc: iterwriter.DefaultIterwriterCallback,
+	}
+
+	return RunWithOptions(ctx, opts)
+}
+
+func RunWithOptions(ctx context.Context, opts *RunOptions) error {
+
+	fs := opts.FlagSet
 
 	flagset.Parse(fs)
 
@@ -57,7 +76,11 @@ func RunWithFlagSet(ctx context.Context, fs *flag.FlagSet, logger *log.Logger) e
 		writers[idx] = wr
 	}
 
-	mw := writer.NewMultiWriter(writers...)
+	mw, err := writer.NewMultiWriter(ctx, writers...)
+
+	if err != nil {
+		return fmt.Errorf("Failed to create multi writer, %w", err)
+	}
 
 	monitor, err := timings.NewMonitor(ctx, monitor_uri)
 
@@ -68,7 +91,9 @@ func RunWithFlagSet(ctx context.Context, fs *flag.FlagSet, logger *log.Logger) e
 	monitor.Start(ctx, os.Stdout)
 	defer monitor.Stop(ctx)
 
-	err = iterwriter.IterateWithWriter(ctx, mw, monitor, iterator_uri, iterator_paths...)
+	iter_cb := opts.CallbackFunc(mw, opts.Logger, monitor)
+
+	err = iterwriter.IterateWithWriterAndCallback(ctx, mw, iter_cb, monitor, iterator_uri, iterator_paths...)
 
 	if err != nil {
 		return fmt.Errorf("Failed to iterate with writer, %w", err)

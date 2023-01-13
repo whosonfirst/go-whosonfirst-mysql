@@ -1,9 +1,12 @@
 package main
 
 import (
+	_ "github.com/whosonfirst/go-whosonfirst-mysql/writer"
+)
+
+import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/whosonfirst/go-whosonfirst-iterate-git/v2"
-	_ "github.com/whosonfirst/go-whosonfirst-mysql/writer"
 )
 
 import (

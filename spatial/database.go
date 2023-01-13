@@ -13,7 +13,6 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-spatial"
 	"github.com/whosonfirst/go-whosonfirst-spatial/database"
 	"github.com/whosonfirst/go-whosonfirst-spatial/filter"
-	"github.com/whosonfirst/go-whosonfirst-spatial/timer"
 	"github.com/whosonfirst/go-whosonfirst-spr/v2"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
@@ -36,7 +35,6 @@ func init() {
 type MysqlSpatialDatabase struct {
 	database.SpatialDatabase
 	Logger            *log.Logger
-	Timer             *timer.Timer
 	mu                *sync.RWMutex
 	db                wof_sql.Database
 	whosonfirst_table wof_sql.Table
@@ -110,11 +108,8 @@ func NewMysqlSpatialDatabaseWithDatabase(ctx context.Context, uri string, mysql_
 
 	mu := new(sync.RWMutex)
 
-	t := timer.NewTimer()
-
 	spatial_db := &MysqlSpatialDatabase{
 		Logger:            logger,
-		Timer:             t,
 		db:                mysql_db,
 		whosonfirst_table: whosonfirst_table,
 		geojson_table:     geojson_table,
@@ -345,9 +340,7 @@ func (r *MysqlSpatialDatabase) inflateSpatialIndexWithChannels(ctx context.Conte
 		// pass
 	}
 
-	str_id := strconv.FormatInt(id, 10)
-
-	t4 := time.Now()
+	// str_id := strconv.FormatInt(id, 10)
 
 	body, err := wof_reader.LoadBytes(ctx, r, id)
 
@@ -363,10 +356,6 @@ func (r *MysqlSpatialDatabase) inflateSpatialIndexWithChannels(ctx context.Conte
 		return
 	}
 
-	r.Timer.Add(ctx, str_id, "time to retrieve SPR", time.Since(t4))
-
-	t5 := time.Now()
-
 	for _, f := range filters {
 
 		err = filter.FilterSPR(f, s)
@@ -376,8 +365,6 @@ func (r *MysqlSpatialDatabase) inflateSpatialIndexWithChannels(ctx context.Conte
 			return
 		}
 	}
-
-	r.Timer.Add(ctx, str_id, "time to filter SPR", time.Since(t5))
 
 	rsp_ch <- s
 }
