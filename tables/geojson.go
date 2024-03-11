@@ -3,18 +3,13 @@ package tables
 import (
 	"context"
 	"database/sql"
-	_ "embed"
 	"fmt"
-	
+
 	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-feature/properties"
+	foo_tables "github.com/whosonfirst/go-whosonfirst-sql/tables"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 )
-
-//go:embed geojson.schema
-var geojson_schema string
-
-const GEOJSON_TABLE string = "geojson"
 
 type GeoJSONTable struct {
 	wof_sql.Table
@@ -43,11 +38,12 @@ func NewGeoJSONTable(ctx context.Context) (wof_sql.Table, error) {
 }
 
 func (t *GeoJSONTable) Name() string {
-	return GEOJSON_TABLE
+	return foo_tables.GEOJSON_TABLE_NAME
 }
 
 func (t *GeoJSONTable) Schema() string {
-	return geojson_schema
+	s, _ := foo_tables.LoadSchema("mysql", foo_tables.GEOJSON_TABLE_NAME)
+	return s
 }
 
 func (t *GeoJSONTable) InitializeTable(ctx context.Context, db wof_sql.Database) error {
@@ -115,7 +111,7 @@ func (t *GeoJSONTable) IndexFeature(ctx context.Context, tx *sql.Tx, body []byte
 		id, alt, body, lastmodified
 	) VALUES (
 		?, ?, ?, ?
-	)`, GEOJSON_TABLE)
+	)`, foo_tables.GEOJSON_TABLE_NAME)
 
 	_, err = tx.ExecContext(ctx, q, id, str_alt, string(body), lastmod)
 

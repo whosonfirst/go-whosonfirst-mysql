@@ -12,7 +12,7 @@ import (
 	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-database-sql/prune"
-	"github.com/whosonfirst/go-whosonfirst-mysql/tables"	
+	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
 )
 
 func main() {
