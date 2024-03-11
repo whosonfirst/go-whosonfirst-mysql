@@ -8,8 +8,9 @@ import (
 
 import (
 	"context"
-	"github.com/whosonfirst/go-whosonfirst-iterwriter/application/iterwriter"
 	"log"
+
+	"github.com/whosonfirst/go-whosonfirst-iterwriter/application/iterwriter"	
 )
 
 func main() {
