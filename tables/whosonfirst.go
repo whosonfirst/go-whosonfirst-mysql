@@ -11,7 +11,7 @@ import (
 	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-feature/geometry"
 	"github.com/whosonfirst/go-whosonfirst-feature/properties"
-	foo_tables "github.com/whosonfirst/go-whosonfirst-sql/tables"
+	wof_tables "github.com/whosonfirst/go-whosonfirst-sql/tables"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 )
 
@@ -42,7 +42,7 @@ func NewWhosonfirstTable(ctx context.Context) (wof_sql.Table, error) {
 }
 
 func (t *WhosonfirstTable) Name() string {
-	return foo_tables.WHOSONFIRST_TABLE_NAME
+	return wof_tables.WHOSONFIRST_TABLE_NAME
 }
 
 // https://dev.sql.com/doc/refman/8.0/en/json-functions.html
@@ -50,7 +50,7 @@ func (t *WhosonfirstTable) Name() string {
 // https://archive.fosdem.org/2016/schedule/event/mysql57_json/attachments/slides/1291/export/events/attachments/mysql57_json/slides/1291/MySQL_57_JSON.pdf
 
 func (t *WhosonfirstTable) Schema() string {
-	s, _ := foo_tables.LoadSchema("mysql", foo_tables.WHOSONFIRST_TABLE_NAME)
+	s, _ := wof_tables.LoadSchema("mysql", wof_tables.WHOSONFIRST_TABLE_NAME)
 	return s
 }
 
@@ -140,7 +140,7 @@ func (t *WhosonfirstTable) IndexFeature(ctx context.Context, tx *sql.Tx, body []
 		geometry, centroid, id, properties, lastmodified
 	) VALUES (
 		ST_GeomFromText('%s'), ST_GeomFromText('%s'), ?, ?, ?
-	)`, foo_tables.WHOSONFIRST_TABLE_NAME, wkt_geom, wkt_centroid)
+	)`, wof_tables.WHOSONFIRST_TABLE_NAME, wkt_geom, wkt_centroid)
 
 	_, err = tx.ExecContext(ctx, q, id, string(props_json), lastmod)
 

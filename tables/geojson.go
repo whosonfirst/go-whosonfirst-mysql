@@ -7,7 +7,7 @@ import (
 
 	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-feature/properties"
-	foo_tables "github.com/whosonfirst/go-whosonfirst-sql/tables"
+	wof_tables "github.com/whosonfirst/go-whosonfirst-sql/tables"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 )
 
@@ -38,11 +38,11 @@ func NewGeoJSONTable(ctx context.Context) (wof_sql.Table, error) {
 }
 
 func (t *GeoJSONTable) Name() string {
-	return foo_tables.GEOJSON_TABLE_NAME
+	return wof_tables.GEOJSON_TABLE_NAME
 }
 
 func (t *GeoJSONTable) Schema() string {
-	s, _ := foo_tables.LoadSchema("mysql", foo_tables.GEOJSON_TABLE_NAME)
+	s, _ := wof_tables.LoadSchema("mysql", wof_tables.GEOJSON_TABLE_NAME)
 	return s
 }
 
@@ -111,7 +111,7 @@ func (t *GeoJSONTable) IndexFeature(ctx context.Context, tx *sql.Tx, body []byte
 		id, alt, body, lastmodified
 	) VALUES (
 		?, ?, ?, ?
-	)`, foo_tables.GEOJSON_TABLE_NAME)
+	)`, wof_tables.GEOJSON_TABLE_NAME)
 
 	_, err = tx.ExecContext(ctx, q, id, str_alt, string(body), lastmod)
 
