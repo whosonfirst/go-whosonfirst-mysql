@@ -10,7 +10,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/whosonfirst/go-whosonfirst-iterwriter/application/iterwriter"	
+	"github.com/whosonfirst/go-whosonfirst-iterwriter/application/iterwriter"
 )
 
 func main() {

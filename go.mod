@@ -1,6 +1,6 @@
 module github.com/whosonfirst/go-whosonfirst-mysql
 
-go 1.18
+go 1.22
 
 require (
 	github.com/go-sql-driver/mysql v1.8.0
@@ -11,6 +11,7 @@ require (
 	github.com/whosonfirst/go-whosonfirst-feature v0.0.27
 	github.com/whosonfirst/go-whosonfirst-iterate-git/v2 v2.1.4
 	github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.17
+	github.com/whosonfirst/go-whosonfirst-sql v0.0.4
 	github.com/whosonfirst/go-whosonfirst-uri v1.3.0
 	github.com/whosonfirst/go-writer/v3 v3.1.0
 )
