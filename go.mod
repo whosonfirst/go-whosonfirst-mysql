@@ -8,10 +8,10 @@ require (
 	github.com/sfomuseum/go-flags v0.10.0
 	github.com/tidwall/gjson v1.17.1
 	github.com/whosonfirst/go-whosonfirst-database-sql v0.0.2
-	github.com/whosonfirst/go-whosonfirst-elasticsearch v0.10.3
 	github.com/whosonfirst/go-whosonfirst-feature v0.0.27
 	github.com/whosonfirst/go-whosonfirst-iterate-git/v2 v2.1.4
 	github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.17
+	github.com/whosonfirst/go-whosonfirst-spelunker v0.0.0-20240320192355-9b5a32a26365
 	github.com/whosonfirst/go-whosonfirst-sql v0.0.4
 	github.com/whosonfirst/go-whosonfirst-uri v1.3.0
 	github.com/whosonfirst/go-writer/v3 v3.1.0

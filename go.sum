@@ -226,8 +226,6 @@ github.com/whosonfirst/go-whosonfirst-crawl v0.2.2 h1:7nwpNV/BFoPR0R7KMMy1iiYAer
 github.com/whosonfirst/go-whosonfirst-crawl v0.2.2/go.mod h1:2GZkaK9jaOisWRnBQGWzmb7H55TUFl9y9F30lrk2hwk=
 github.com/whosonfirst/go-whosonfirst-database-sql v0.0.2 h1:5NpKBNAKovQs0QJJn/x3zOAmsAierA0ryzk4SoLPa0s=
 github.com/whosonfirst/go-whosonfirst-database-sql v0.0.2/go.mod h1:OkRFSf60U7hPo5d7ePfOBPtl09Qcg/u5hk3b7dyGR18=
-github.com/whosonfirst/go-whosonfirst-elasticsearch v0.10.3 h1:m9ECXHXVKcv/cFczfBHYlvkxtUvZiz5K3f4drmp8C2w=
-github.com/whosonfirst/go-whosonfirst-elasticsearch v0.10.3/go.mod h1:eTRiXBBtq7+Y39dxXQtjurWWu43U8yM3Vr8SXtEK65A=
 github.com/whosonfirst/go-whosonfirst-feature v0.0.27 h1:8RoiadvQEo8RFq8HFezq/Mwm/7UXR+dNJpE9oP8kvfQ=
 github.com/whosonfirst/go-whosonfirst-feature v0.0.27/go.mod h1:vAtQysyMODE/ynMxSrHJ2eCBJRNFj9xUszrURnOy9Xc=
 github.com/whosonfirst/go-whosonfirst-flags v0.5.1 h1:kRzXK7WZlEK1hNw+CECEdnWNtEDbWbjWdEg0imu1mGE=
@@ -242,6 +240,8 @@ github.com/whosonfirst/go-whosonfirst-placetypes v0.7.0 h1:hm1dySC23ZZYHDleAE201
 github.com/whosonfirst/go-whosonfirst-placetypes v0.7.0/go.mod h1:d7S4er4OFfFsgzMOnHH8mX8q+iPhXWB+merbrMDx/rk=
 github.com/whosonfirst/go-whosonfirst-sources v0.1.0 h1:JuKLa6KWke22jBfJ1pM9WQHoz1/3pbDv2C+aR+THPPQ=
 github.com/whosonfirst/go-whosonfirst-sources v0.1.0/go.mod h1:EUMHyGzUmqPPxlMmOp+28BFeoBdxxE0HCKRd67lkqGM=
+github.com/whosonfirst/go-whosonfirst-spelunker v0.0.0-20240320192355-9b5a32a26365 h1:e1fKl9HYiZompS4LLKT4f/Nt3oD1xOlhOdEj2Zmrtz0=
+github.com/whosonfirst/go-whosonfirst-spelunker v0.0.0-20240320192355-9b5a32a26365/go.mod h1:PR3735KE/H2I/HX1Azigw6FV5OOzXoLtjNVBDe+o5PA=
 github.com/whosonfirst/go-whosonfirst-sql v0.0.4 h1:dMFnRrSEIR1t3MHAMkGt2v/y9J0U4npIRbO5+Ssod/s=
 github.com/whosonfirst/go-whosonfirst-sql v0.0.4/go.mod h1:sQXkJTPfnxXbOPTCCxGjUydfQqATfEyO4xyxj2pEX3E=
 github.com/whosonfirst/go-whosonfirst-uri v1.3.0 h1:LYOVLqP9rWQxauYVkdw65j5LZxEi8OK0GHh/qCEpX4g=

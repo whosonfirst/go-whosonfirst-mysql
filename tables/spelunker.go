@@ -8,7 +8,7 @@ import (
 
 	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-feature/properties"
-	"github.com/whosonfirst/go-whosonfirst-elasticsearch/document"	
+	"github.com/whosonfirst/go-whosonfirst-spelunker/document"	
 	wof_tables "github.com/whosonfirst/go-whosonfirst-sql/tables"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 )
@@ -109,7 +109,7 @@ func (t *SpelunkerTable) IndexFeature(ctx context.Context, tx *sql.Tx, body []by
 		}
 	}
 
-	doc, err := document.PrepareSpelunkerV1Document(ctx, body)
+	doc, err := document.PrepareSpelunkerV2Document(ctx, body)
 
 	if err != nil {
 		return fmt.Errorf("Failed to prepare spelunker document, %w", err)
