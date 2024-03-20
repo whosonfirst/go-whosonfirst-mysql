@@ -76,6 +76,8 @@ github.com/cyphar/filepath-securejoin v0.2.4/go.mod h1:aPGpWjXOXUn2NCNjFvBE6aRxG
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dominikbraun/graph v0.16.1 h1:ZtzDQFo32vxwSUsK4ioX8bfE45xoh8hQfavFMlKpaC8=
+github.com/dominikbraun/graph v0.16.1/go.mod h1:yOjYyogZLY1LSG9E33JWZJiq5k83Qy2C6POAuiViluc=
 github.com/elazarl/goproxy v0.0.0-20230808193330-2592e75ae04a h1:mATvB/9r/3gvcejNsXKSkQ6lcIaNec2nyfOdlTBR2lU=
 github.com/elazarl/goproxy v0.0.0-20230808193330-2592e75ae04a/go.mod h1:Ro8st/ElPeALwNFlcTpWmkr6IoMFfkjXAvTHpevnDsM=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
@@ -208,6 +210,7 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.17.1 h1:wlYEnwqAHgzmhNUFfw7Xalt2JzQvsMx2Se4PcoFCT/U=
 github.com/tidwall/gjson v1.17.1/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/match v1.1.1 h1:+Ho715JplO36QYgwN9PGYNhgZvoUSc9X2c80KVTi+GA=
@@ -215,12 +218,16 @@ github.com/tidwall/match v1.1.1/go.mod h1:eRSPERbgtNPcGhD8UCthc6PmLEQXEWd3PRB5JT
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tidwall/pretty v1.2.0 h1:RWIZEg2iJ8/g6fDDYzMpobmaoGh5OLl4AXtGUGPcqCs=
 github.com/tidwall/pretty v1.2.0/go.mod h1:ITEVvHYasfjBbM0u2Pg8T2nJnzm8xPwvNhhsoaGGjNU=
+github.com/tidwall/sjson v1.2.5 h1:kLy8mja+1c9jlljvWTlSazM7cKDRfJuR/bOJhcY5NcY=
+github.com/tidwall/sjson v1.2.5/go.mod h1:Fvgq9kS/6ociJEDnK0Fk1cpYF4FIW6ZF7LAe+6jwd28=
 github.com/whosonfirst/go-ioutil v1.0.2 h1:+GJPfa42OFn5A+5yJSc5jQTQIkNV3/MhYyg4pavdrC8=
 github.com/whosonfirst/go-ioutil v1.0.2/go.mod h1:2dS1vWdAIkiHDvDF8fYyjv6k2NISmwaIjJJeEDBEdvg=
 github.com/whosonfirst/go-whosonfirst-crawl v0.2.2 h1:7nwpNV/BFoPR0R7KMMy1iiYAer7wlHJBUOiL+NLzIFs=
 github.com/whosonfirst/go-whosonfirst-crawl v0.2.2/go.mod h1:2GZkaK9jaOisWRnBQGWzmb7H55TUFl9y9F30lrk2hwk=
 github.com/whosonfirst/go-whosonfirst-database-sql v0.0.2 h1:5NpKBNAKovQs0QJJn/x3zOAmsAierA0ryzk4SoLPa0s=
 github.com/whosonfirst/go-whosonfirst-database-sql v0.0.2/go.mod h1:OkRFSf60U7hPo5d7ePfOBPtl09Qcg/u5hk3b7dyGR18=
+github.com/whosonfirst/go-whosonfirst-elasticsearch v0.10.3 h1:m9ECXHXVKcv/cFczfBHYlvkxtUvZiz5K3f4drmp8C2w=
+github.com/whosonfirst/go-whosonfirst-elasticsearch v0.10.3/go.mod h1:eTRiXBBtq7+Y39dxXQtjurWWu43U8yM3Vr8SXtEK65A=
 github.com/whosonfirst/go-whosonfirst-feature v0.0.27 h1:8RoiadvQEo8RFq8HFezq/Mwm/7UXR+dNJpE9oP8kvfQ=
 github.com/whosonfirst/go-whosonfirst-feature v0.0.27/go.mod h1:vAtQysyMODE/ynMxSrHJ2eCBJRNFj9xUszrURnOy9Xc=
 github.com/whosonfirst/go-whosonfirst-flags v0.5.1 h1:kRzXK7WZlEK1hNw+CECEdnWNtEDbWbjWdEg0imu1mGE=
@@ -231,6 +238,8 @@ github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.3.4 h1:fEhr0jwqxXvG7Nb7id4Q2
 github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.3.4/go.mod h1:kDIvHxJTo6XgFKmLHliGLxlqeeHhxuYtdeVZBAcP68g=
 github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.17 h1:ayj8er2sQg/EbsBlpFTrMmPCU8s5V38i+kLBsYU1nbA=
 github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.17/go.mod h1:YnagBB2woqKftWOzmAkPj/wfrifQWSNT5rgCH5izrfI=
+github.com/whosonfirst/go-whosonfirst-placetypes v0.7.0 h1:hm1dySC23ZZYHDleAE201+s5HTUtgle38JlKzfVZVHA=
+github.com/whosonfirst/go-whosonfirst-placetypes v0.7.0/go.mod h1:d7S4er4OFfFsgzMOnHH8mX8q+iPhXWB+merbrMDx/rk=
 github.com/whosonfirst/go-whosonfirst-sources v0.1.0 h1:JuKLa6KWke22jBfJ1pM9WQHoz1/3pbDv2C+aR+THPPQ=
 github.com/whosonfirst/go-whosonfirst-sources v0.1.0/go.mod h1:EUMHyGzUmqPPxlMmOp+28BFeoBdxxE0HCKRd67lkqGM=
 github.com/whosonfirst/go-whosonfirst-sql v0.0.4 h1:dMFnRrSEIR1t3MHAMkGt2v/y9J0U4npIRbO5+Ssod/s=

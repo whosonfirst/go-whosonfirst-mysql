@@ -7,13 +7,14 @@ import (
 import (
 	"context"
 	"fmt"
-	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
-	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
-	wof_writer "github.com/whosonfirst/go-writer/v3"
 	"io"
 	"log"
 	"net/url"
 	"strconv"
+
+	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
+	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
+	wof_writer "github.com/whosonfirst/go-writer/v3"	
 )
 
 func init() {

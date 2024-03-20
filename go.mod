@@ -8,6 +8,7 @@ require (
 	github.com/sfomuseum/go-flags v0.10.0
 	github.com/tidwall/gjson v1.17.1
 	github.com/whosonfirst/go-whosonfirst-database-sql v0.0.2
+	github.com/whosonfirst/go-whosonfirst-elasticsearch v0.10.3
 	github.com/whosonfirst/go-whosonfirst-feature v0.0.27
 	github.com/whosonfirst/go-whosonfirst-iterate-git/v2 v2.1.4
 	github.com/whosonfirst/go-whosonfirst-iterwriter v0.0.17
@@ -43,6 +44,7 @@ require (
 	github.com/aws/smithy-go v1.19.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
+	github.com/dominikbraun/graph v0.16.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/g8rswimmer/error-chain v1.0.0 // indirect
@@ -67,10 +69,12 @@ require (
 	github.com/skeema/knownhosts v1.2.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/whosonfirst/go-ioutil v1.0.2 // indirect
 	github.com/whosonfirst/go-whosonfirst-crawl v0.2.2 // indirect
 	github.com/whosonfirst/go-whosonfirst-flags v0.5.1 // indirect
 	github.com/whosonfirst/go-whosonfirst-iterate/v2 v2.3.4 // indirect
+	github.com/whosonfirst/go-whosonfirst-placetypes v0.7.0 // indirect
 	github.com/whosonfirst/go-whosonfirst-sources v0.1.0 // indirect
 	github.com/whosonfirst/walk v0.0.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
