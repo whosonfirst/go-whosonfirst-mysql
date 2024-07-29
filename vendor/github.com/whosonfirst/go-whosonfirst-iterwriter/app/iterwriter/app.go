@@ -4,7 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"io"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -17,44 +18,65 @@ import (
 )
 
 type RunOptions struct {
-	Logger          *log.Logger
-	FlagSet         *flag.FlagSet
-	FlagSetIsParsed bool
-	CallbackFunc    iterwriter.IterwriterCallbackFunc
-	Writer          writer.Writer
+	CallbackFunc  iterwriter.IterwriterCallbackFunc
+	Writer        writer.Writer
+	IteratorURI   string
+	IteratorPaths []string
+	MonitorURI    string
+	MonitorWriter io.Writer
 }
 
-func Run(ctx context.Context, logger *log.Logger) error {
+func Run(ctx context.Context, logger *slog.Logger) error {
 	fs := DefaultFlagSet()
 	return RunWithFlagSet(ctx, fs, logger)
 }
 
-func RunWithFlagSet(ctx context.Context, fs *flag.FlagSet, logger *log.Logger) error {
+func RunWithFlagSet(ctx context.Context, fs *flag.FlagSet, logger *slog.Logger) error {
 
-	opts := &RunOptions{
-		Logger:       logger,
-		FlagSet:      fs,
-		CallbackFunc: iterwriter.DefaultIterwriterCallback,
-	}
-
-	return RunWithOptions(ctx, opts)
-}
-
-func RunWithOptions(ctx context.Context, opts *RunOptions) error {
-
-	fs := opts.FlagSet
-
-	if !opts.FlagSetIsParsed {
-		flagset.Parse(fs)
-	}
-
-	err := flagset.SetFlagsFromEnvVars(fs, "WOF")
+	opts, err := DefaultOptionsFromFlagSet(fs, true)
 
 	if err != nil {
-		return fmt.Errorf("Failed to assign flags from environment variables, %w", err)
+		return fmt.Errorf("Failed to derive options from flags, %w", err)
+	}
+
+	return RunWithOptions(ctx, opts, logger)
+}
+
+func DefaultOptionsFromFlagSet(fs *flag.FlagSet, parsed bool) (*RunOptions, error) {
+
+	if !parsed {
+
+		flagset.Parse(fs)
+
+		err := flagset.SetFlagsFromEnvVars(fs, "WOF")
+
+		if err != nil {
+			return nil, fmt.Errorf("Failed to assign flags from environment variables, %w", err)
+		}
+	}
+
+	cb_func := iterwriter.DefaultIterwriterCallback
+
+	if forgiving {
+		cb_func = iterwriter.ForgivingIterwriterCallback
 	}
 
 	iterator_paths := fs.Args()
+
+	opts := &RunOptions{
+		CallbackFunc:  cb_func,
+		IteratorURI:   iterator_uri,
+		IteratorPaths: iterator_paths,
+		MonitorURI:    monitor_uri,
+		MonitorWriter: os.Stderr,
+	}
+
+	return opts, nil
+}
+
+func RunWithOptions(ctx context.Context, opts *RunOptions, logger *slog.Logger) error {
+
+	slog.SetDefault(logger)
 
 	var mw writer.Writer
 
@@ -96,18 +118,18 @@ func RunWithOptions(ctx context.Context, opts *RunOptions) error {
 		mw = _mw
 	}
 
-	monitor, err := timings.NewMonitor(ctx, monitor_uri)
+	monitor, err := timings.NewMonitor(ctx, opts.MonitorURI)
 
 	if err != nil {
 		return fmt.Errorf("Failed to create monitor, %w", err)
 	}
 
-	monitor.Start(ctx, os.Stdout)
+	monitor.Start(ctx, opts.MonitorWriter)
 	defer monitor.Stop(ctx)
 
-	iter_cb := opts.CallbackFunc(mw, opts.Logger, monitor)
+	iter_cb := opts.CallbackFunc(mw, monitor)
 
-	err = iterwriter.IterateWithWriterAndCallback(ctx, mw, iter_cb, monitor, iterator_uri, iterator_paths...)
+	err = iterwriter.IterateWithWriterAndCallback(ctx, mw, iter_cb, monitor, opts.IteratorURI, opts.IteratorPaths...)
 
 	if err != nil {
 		return fmt.Errorf("Failed to iterate with writer, %w", err)
