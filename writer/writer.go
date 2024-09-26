@@ -1,19 +1,19 @@
 package writer
 
 import (
-	_ "github.com/go-sql-driver/mysql"
-)
-
-import (
 	"context"
 	"fmt"
-	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
-	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
-	wof_writer "github.com/whosonfirst/go-writer/v3"
 	"io"
 	"log"
+	"log/slog"
 	"net/url"
 	"strconv"
+
+	_ "github.com/go-sql-driver/mysql"
+	
+	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
+	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
+	wof_writer "github.com/whosonfirst/go-writer/v3"	
 )
 
 func init() {
@@ -25,7 +25,6 @@ type MySQLWriter struct {
 	wof_writer.Writer
 	db     wof_sql.Database
 	tables []wof_sql.Table
-	logger *log.Logger
 }
 
 func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) {
@@ -98,12 +97,9 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 		to_index = append(to_index, t)
 	}
 
-	logger := log.New(io.Discard, "", 0)
-
 	wr := &MySQLWriter{
 		db:     db,
 		tables: to_index,
-		logger: logger,
 	}
 
 	return wr, nil
@@ -139,6 +135,6 @@ func (wr *MySQLWriter) Close(ctx context.Context) error {
 }
 
 func (wr *MySQLWriter) SetLogger(ctx context.Context, logger *log.Logger) error {
-	wr.logger = logger
+	slog.Warn("MySQLWriter no longer supports SetLogger. Please use log/slog methods instead.")
 	return nil
 }
