@@ -24,6 +24,7 @@ type RunOptions struct {
 	IteratorPaths []string
 	MonitorURI    string
 	MonitorWriter io.Writer
+	Verbose       bool
 }
 
 func Run(ctx context.Context, logger *slog.Logger) error {
@@ -33,7 +34,7 @@ func Run(ctx context.Context, logger *slog.Logger) error {
 
 func RunWithFlagSet(ctx context.Context, fs *flag.FlagSet, logger *slog.Logger) error {
 
-	opts, err := DefaultOptionsFromFlagSet(fs, true)
+	opts, err := DefaultOptionsFromFlagSet(fs, false)
 
 	if err != nil {
 		return fmt.Errorf("Failed to derive options from flags, %w", err)
@@ -69,6 +70,7 @@ func DefaultOptionsFromFlagSet(fs *flag.FlagSet, parsed bool) (*RunOptions, erro
 		IteratorPaths: iterator_paths,
 		MonitorURI:    monitor_uri,
 		MonitorWriter: os.Stderr,
+		Verbose:       verbose,
 	}
 
 	return opts, nil
@@ -77,6 +79,11 @@ func DefaultOptionsFromFlagSet(fs *flag.FlagSet, parsed bool) (*RunOptions, erro
 func RunWithOptions(ctx context.Context, opts *RunOptions, logger *slog.Logger) error {
 
 	slog.SetDefault(logger)
+
+	if opts.Verbose {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+		logger.Debug("Verbose (debug) logging enabled")
+	}
 
 	var mw writer.Writer
 

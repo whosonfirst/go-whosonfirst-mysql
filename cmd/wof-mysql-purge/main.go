@@ -1,14 +1,12 @@
 package main
 
 import (
-	_ "github.com/go-sql-driver/mysql"
-)
-
-import (
 	"context"
 	"log"
 	"os"
 
+	_ "github.com/go-sql-driver/mysql"
+	
 	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/whosonfirst/go-whosonfirst-database-sql"
 	"github.com/whosonfirst/go-whosonfirst-database-sql/prune"

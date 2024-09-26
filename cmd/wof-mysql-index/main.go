@@ -1,15 +1,13 @@
 package main
 
 import (
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/whosonfirst/go-whosonfirst-iterate-git/v2"
-	_ "github.com/whosonfirst/go-whosonfirst-mysql/writer"
-)
-
-import (
 	"context"
 	"log"
 	"log/slog"
+
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/whosonfirst/go-whosonfirst-iterate-git/v2"
+	_ "github.com/whosonfirst/go-whosonfirst-mysql/writer"
 	
 	"github.com/whosonfirst/go-whosonfirst-iterwriter/app/iterwriter"
 )
