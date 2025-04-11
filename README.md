@@ -59,11 +59,11 @@ For example the `-writer-uri` flag would be overridden by the `WOF_WRITER_URI` e
 
 ## Writers
 
-The `writer` package implements the [whosonfirst/go-writer/v2](https://github.com/whosonfirst/go-writer) interfaces. For example:
+The `writer` package implements the [whosonfirst/go-writer/v3](https://github.com/whosonfirst/go-writer) interfaces. For example:
 
 ```
 import (
-       "github.com/whosonfirst/go-writer/v2"
+       "github.com/whosonfirst/go-writer/v3"
        _ "github.com/whosonfirst/go-whosonfirst-mysql/writer"
 )
 
