@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"database/sql"
 	"log"
 	"log/slog"
 	"net/url"
 	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
-	
-	wof_sql "github.com/whosonfirst/go-whosonfirst-database-sql"
-	"github.com/whosonfirst/go-whosonfirst-mysql/tables"
+
+	sfom_sql "github.com/sfomuseum/go-database/sql"
+	"github.com/whosonfirst/go-whosonfirst-database/sql/tables"
 	wof_writer "github.com/whosonfirst/go-writer/v3"	
 )
 
@@ -23,8 +24,8 @@ func init() {
 
 type MySQLWriter struct {
 	wof_writer.Writer
-	db     wof_sql.Database
-	tables []wof_sql.Table
+	db     *sql.DB
+	tables []sfom_sql.Table
 }
 
 func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) {
@@ -40,9 +41,9 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 	dsn := q.Get("dsn")
 	enc_dsn := url.QueryEscape(dsn)
 
-	db_uri := fmt.Sprintf("mysql://?dsn=%s", enc_dsn)
+	db_uri := fmt.Sprintf("sql://mysql?dsn=%s", enc_dsn)
 
-	db, err := wof_sql.NewSQLDB(ctx, db_uri)
+	db, err := sfom_sql.OpenWithURI(ctx, db_uri)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create database, %w", err)
@@ -73,7 +74,7 @@ func NewMySQLWriter(ctx context.Context, uri string) (wof_writer.Writer, error) 
 		index_whosonfirst = index
 	}
 
-	to_index := make([]wof_sql.Table, 0)
+	to_index := make([]sfom_sql.Table, 0)
 
 	if index_geojson {
 
