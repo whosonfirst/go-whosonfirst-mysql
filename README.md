@@ -2,6 +2,10 @@
 
 Go package for working with Who's On First documents and MySQL databases and implementing the `whosonfirst/go-whosonfirst-database-sql` interfaces.
 
+## Deprecated
+
+This package has been deprecated and is no longer maintained. Its functionality has been merged in the [whosonfirst/go-whosonfirst-database](https://github.com/whosonfirst/go-whosonfirst-database/) package.
+
 ## Documentation
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/whosonfirst/go-whosonfirst-mysql.svg)](https://pkg.go.dev/github.com/whosonfirst/go-whosonfirst-mysql)
